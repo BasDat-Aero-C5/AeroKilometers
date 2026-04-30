@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block content %}
+
+
+<div class="min-h-screen bg-primary text-white p-8">
+
+    <!-- HEADER -->
+    <h2 class="text-2xl font-semibold">Dashboard</h2>
+    <p class="text-gray-300 mt-1">Selamat datang, {{ user.name }}</p>
+
+    <!-- INFORMASI PRIBADI -->
+    <div class="bg-white text-primary rounded-xl p-6 mt-6 shadow">
+        <h3 class="text-lg font-semibold mb-4">Informasi Pribadi</h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+            <div><span class="font-semibold">Nama:</span> {{ user.name }}</div>
+            <div><span class="font-semibold">Email:</span> {{ user.email }}</div>
+            <div><span class="font-semibold">Telepon:</span> {{ user.phone }}</div>
+            <div><span class="font-semibold">Kewarganegaraan:</span> {{ user.nationality }}</div>
+            <div><span class="font-semibold">Tanggal Lahir:</span> {{ user.birthdate }}</div>
+            <div><span class="font-semibold">Tanggal Bergabung:</span> {{ user.joined }}</div>
+        </div>
+    </div>
+
+    <!-- MEMBER DASHBOARD -->
+    {% if role == "member" %}
+    <div class="flex flex-wrap gap-4 mt-6">
+
+        <div class="bg-white text-primary rounded-xl p-4 w-44 text-center shadow">
+            <p class="text-sm">Nomor Member</p>
+            <p class="font-bold">{{ member.member_id }}</p>
+        </div>
+
+        <div class="bg-white text-primary rounded-xl p-4 w-44 text-center shadow">
+            <p class="text-sm">Tier</p>
+            <span class="bg-gold text-primary px-3 py-1 rounded-lg font-semibold">
+                {{ member.tier }}
+            </span>
+        </div>
+
+        <div class="bg-white text-primary rounded-xl p-4 w-44 text-center shadow">
+            <p class="text-sm">Total Miles</p>
+            <p class="font-bold">{{ member.total_miles }}</p>
+        </div>
+
+        <div class="bg-white text-primary rounded-xl p-4 w-44 text-center shadow">
+            <p class="text-sm">Award Miles</p>
+            <p class="font-bold">{{ member.award_miles }}</p>
+        </div>
+
+    </div>
+
+    <!-- TRANSAKSI -->
+    <div class="bg-white text-primary rounded-xl p-6 mt-6 shadow">
+        <h3 class="font-semibold mb-4">5 Transaksi Terbaru</h3>
+
+        {% for t in member.transactions %}
+        <div class="flex justify-between py-3 border-b text-sm">
+            <span>{{ t.type }} - {{ t.date }}</span>
+
+            <span class="{% if '-' in t.miles %}text-red-500{% else %}text-green-600{% endif %} font-semibold">
+                {{ t.miles }} miles
+            </span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- STAFF DASHBOARD -->
+    {% if role == "staff" %}
+    <div class="flex flex-wrap gap-4 mt-6">
+
+        <div class="bg-white text-primary rounded-xl p-4 w-44 text-center shadow">
+            <p class="text-sm">ID Staff</p>
+            <p class="font-bold">{{ staff.staff_id }}</p>
+        </div>
+
+        <div class="bg-white text-primary rounded-xl p-4 w-44 text-center shadow">
+            <p class="text-sm">Maskapai</p>
+            <p class="font-bold">{{ staff.airline }}</p>
+        </div>
+
+        <div class="bg-white text-primary rounded-xl p-4 w-44 text-center shadow">
+            <p class="text-sm">Klaim Menunggu</p>
+            <p class="font-bold">{{ staff.pending }}</p>
+        </div>
+
+        <div class="bg-white text-primary rounded-xl p-4 w-44 text-center shadow">
+            <p class="text-sm">Klaim Disetujui</p>
+            <p class="font-bold text-green-600">{{ staff.approved }}</p>
+        </div>
+
+        <div class="bg-white text-primary rounded-xl p-4 w-44 text-center shadow">
+            <p class="text-sm">Klaim Ditolak</p>
+            <p class="font-bold text-red-500">{{ staff.rejected }}</p>
+        </div>
+
+    </div>
+    {% endif %}
+
+</div>
+
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background-color: #25354c; 
+  }
+</style>
+
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        primary: '#25354c',
+        gold: '#f2d56d'
+      }
+    }
+  }
+}
+</script>
+
+
+{% endblock %}

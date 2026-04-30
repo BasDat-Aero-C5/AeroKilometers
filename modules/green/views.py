@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.db import IntegrityError
 from django.utils import timezone
 
-from main.models import (
+from modules.green.models import (
     Member, Staf, Maskapai, Bandara,
     ClaimMissingMiles, Pengguna
 )

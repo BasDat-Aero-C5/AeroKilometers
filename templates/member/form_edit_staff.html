@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 p-6 font-body">
+
+  <!-- Backdrop -->
+  <div class="fixed inset-0 z-40 bg-black/40 flex items-center justify-center">
+    <!-- Modal -->
+    <div class="relative bg-white rounded-lg shadow-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <!-- Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white">
+        <h2 class="font-heading text-lg font-bold text-navy-400">Edit Member</h2>
+        <button type="button" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Form Body -->
+      <form class="px-6 py-4 space-y-4">
+        <!-- Salutation -->
+        <div>
+          <label class="block text-sm font-semibold text-navy-400 mb-1">Salutation</label>
+          <select class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-navy-400 focus:border-navy-200 focus:outline-none focus:ring-2 focus:ring-navy-100 transition-colors appearance-none cursor-pointer">
+            <option value="Mr." {% if member.salutation == 'Mr.' %}selected{% endif %}>Mr.</option>
+            <option value="Mrs." {% if member.salutation == 'Mrs.' %}selected{% endif %}>Mrs.</option>
+            <option value="Ms." {% if member.salutation == 'Ms.' %}selected{% endif %}>Ms.</option>
+            <option value="Dr." {% if member.salutation == 'Dr.' %}selected{% endif %}>Dr.</option>
+          </select>
+        </div>
+
+        <!-- Nama Depan & Tengah -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-semibold text-navy-400 mb-1">Nama Depan</label>
+            <input type="text"
+                   value="{{ member.nama_depan }}"
+                   placeholder="John"
+                   class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-navy-400 placeholder-gray-400 focus:border-navy-200 focus:outline-none focus:ring-2 focus:ring-navy-100 transition-colors">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-navy-400 mb-1">Nama Tengah</label>
+            <input type="text"
+                   value="{{ member.nama_tengah }}"
+                   placeholder="William"
+                   class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-navy-400 placeholder-gray-400 focus:border-navy-200 focus:outline-none focus:ring-2 focus:ring-navy-100 transition-colors">
+          </div>
+        </div>
+
+        <!-- Nama Belakang & Kewarganegaraan -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-semibold text-navy-400 mb-1">Nama Belakang</label>
+            <input type="text"
+                   value="{{ member.nama_belakang }}"
+                   placeholder="Doe"
+                   class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-navy-400 placeholder-gray-400 focus:border-navy-200 focus:outline-none focus:ring-2 focus:ring-navy-100 transition-colors">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-navy-400 mb-1">Kewarganegaraan</label>
+            <select class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-navy-400 focus:border-navy-200 focus:outline-none focus:ring-2 focus:ring-navy-100 transition-colors appearance-none cursor-pointer">
+              <option value="Indonesia" {% if member.kewarganegaraan == 'Indonesia' %}selected{% endif %}>Indonesia</option>
+              <option value="Malaysia" {% if member.kewarganegaraan == 'Malaysia' %}selected{% endif %}>Malaysia</option>
+              <option value="Singapura" {% if member.kewarganegaraan == 'Singapura' %}selected{% endif %}>Singapura</option>
+              <option value="Thailand" {% if member.kewarganegaraan == 'Thailand' %}selected{% endif %}>Thailand</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Country Code & Nomor HP -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-semibold text-navy-400 mb-1">Country Code</label>
+            <select class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-navy-400 focus:border-navy-200 focus:outline-none focus:ring-2 focus:ring-navy-100 transition-colors appearance-none cursor-pointer">
+              <option value="+62" {% if member.country_code == '+62' %}selected{% endif %}>+62</option>
+              <option value="+60" {% if member.country_code == '+60' %}selected{% endif %}>+60</option>
+              <option value="+65" {% if member.country_code == '+65' %}selected{% endif %}>+65</option>
+              <option value="+66" {% if member.country_code == '+66' %}selected{% endif %}>+66</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-navy-400 mb-1">Nomor HP</label>
+            <input type="tel"
+                   value="{{ member.nomor_hp }}"
+                   placeholder="8123456789"
+                   class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-navy-400 placeholder-gray-400 focus:border-navy-200 focus:outline-none focus:ring-2 focus:ring-navy-100 transition-colors">
+          </div>
+        </div>
+
+        <!-- Tanggal Lahir & Tier -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-semibold text-navy-400 mb-1">Tanggal Lahir</label>
+            <input type="date"
+                   value="{{ member.tanggal_lahir }}"
+                   class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-navy-400 focus:border-navy-200 focus:outline-none focus:ring-2 focus:ring-navy-100 transition-colors">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-navy-400 mb-1">Tier</label>
+            <select class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-navy-400 focus:border-navy-200 focus:outline-none focus:ring-2 focus:ring-navy-100 transition-colors appearance-none cursor-pointer">
+              <option value="Gold" {% if member.tier == 'Gold' %}selected{% endif %}>Gold</option>
+              <option value="Silver" {% if member.tier == 'Silver' %}selected{% endif %}>Silver</option>
+              <option value="Blue" {% if member.tier == 'Blue' %}selected{% endif %}>Blue</option>
+              <option value="Platinum" {% if member.tier == 'Platinum' %}selected{% endif %}>Platinum</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Footer Buttons -->
+        <div class="flex gap-2 pt-4 border-t border-gray-200 mt-6">
+          <button type="button" class="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-gray-400 border border-gray-200 hover:border-gray-300 hover:text-gray-600 transition-colors">
+            Batal
+          </button>
+          <button type="submit" class="flex-1 px-4 py-2 rounded-lg text-sm font-semibold bg-navy-300 text-white hover:bg-navy-400 transition-colors shadow-sm">
+            Simpan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

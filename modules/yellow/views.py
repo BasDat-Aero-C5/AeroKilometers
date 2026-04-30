@@ -75,3 +75,40 @@ def form_view_member(request):
     return render(request, 'member/form_create_member.html')
 
 
+def edit_view_staff(request, id):
+    """Staff edit member data"""
+    member = {
+        'id': id,
+        'salutation': 'Mr.',
+        'nama_depan': 'John',
+        'nama_tengah': 'William',
+        'nama_belakang': 'Doe',
+        'kewarganegaraan': 'Indonesia',
+        'country_code': '+62',
+        'nomor_hp': '8123456789',
+        'tanggal_lahir': '1990-05-15',
+        'tier': 'Gold',
+    }
+    
+    return render(request, 'member/form_edit_staff.html', {
+        'member': member,
+    })
+
+
+def edit_view_member(request, id):
+    """Member edit identity data"""
+    identity = {
+        'id': id,
+        'nomor_dokumen': 'SIM0001',
+        'jenis_dokumen': 'SIM',
+        'negara': 'Indonesia',
+        'tanggal_terbit': '2024-12-04',
+        'tanggal_habis': '2031-12-04',
+        'status': 'Aktif',
+    }
+    
+    return render(request, 'member/form_edit_member.html', {
+        'identity': identity,
+    })
+
+

@@ -13,4 +13,8 @@ urlpatterns = [
     # Fitur 9 - Staf
     path('staf/claim/',                  views.staf_claim_list,   name='staf_claim_list'),
     path('staf/claim/<int:pk>/proses/',  views.staf_claim_proses, name='staf_claim_proses'),
+
+    # Fitur 10 - Transfer Miles
+    path('transfer/',        views.transfer_list,   name='transfer_list'),
+    path('transfer/buat/',   views.transfer_create, name='transfer_create'),
 ]

@@ -205,3 +205,29 @@ class ClaimMissingMiles(models.Model):
 
     def get_nomor_klaim(self):
         return f"CLM-{self.pk:03d}"
+
+
+class Transfer(models.Model):
+    email_member_1 = models.ForeignKey(
+                         Member,
+                         on_delete=models.CASCADE,
+                         db_column='email_member_1',
+                         related_name='transfers_keluar'
+                     )
+    email_member_2 = models.ForeignKey(
+                         Member,
+                         on_delete=models.CASCADE,
+                         db_column='email_member_2',
+                         related_name='transfers_masuk'
+                     )
+    timestamp = models.DateTimeField(default=timezone.now)
+    jumlah    = models.IntegerField()
+    catatan   = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'TRANSFER'
+        unique_together = [['email_member_1', 'email_member_2', 'timestamp']]
+
+    def __str__(self):
+        return f"{self.email_member_1_id} -> {self.email_member_2_id} | {self.jumlah} miles"

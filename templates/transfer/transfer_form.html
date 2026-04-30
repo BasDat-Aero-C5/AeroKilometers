@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Transfer Miles | AeroMiles{% endblock %}
+
+{% block content %}
+
+  <div class="max-w-lg mx-auto">
+
+    <!-- Header -->
+    <div class="mb-8">
+      <a href="{% url 'green:transfer_list' %}" class="text-navy-50 hover:text-gold-300 text-sm flex items-center gap-1 mb-4 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+        Kembali
+      </a>
+      <h1 class="font-heading text-3xl font-bold text-gold-300">Transfer Miles</h1>
+      <p class="text-navy-50 text-sm mt-1">
+        Award Miles tersedia:
+        <span class="text-gold-300 font-semibold">{{ member.award_miles|default:0 }}</span>
+      </p>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+      {% for message in messages %}
+        <div class="mb-4 px-4 py-3 rounded-xl text-sm font-medium
+          {% if message.tags == 'success' %}bg-green-500/20 text-green-300 border border-green-500/30
+          {% else %}bg-red-500/20 text-red-300 border border-red-500/30{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- Form Card -->
+    <div class="bg-navy-300/30 border border-navy-300/50 rounded-2xl p-8">
+      <form method="POST">
+        {% csrf_token %}
+
+        <!-- Email Penerima -->
+        <div class="mb-5">
+          <label class="block text-sm font-medium text-navy-50 mb-2">Email Member Penerima</label>
+          <input type="email" name="email_penerima" required
+            placeholder="email@contoh.com"
+            class="w-full bg-navy-400 border border-navy-300/50 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-gold-300 transition-colors placeholder-navy-100/50">
+        </div>
+
+        <!-- Jumlah Miles -->
+        <div class="mb-5">
+          <label class="block text-sm font-medium text-navy-50 mb-2">Jumlah Miles</label>
+          <input type="number" name="jumlah" required min="1"
+            placeholder="e.g. 1000"
+            class="w-full bg-navy-400 border border-navy-300/50 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-gold-300 transition-colors placeholder-navy-100/50">
+        </div>
+
+        <!-- Catatan -->
+        <div class="mb-8">
+          <label class="block text-sm font-medium text-navy-50 mb-2">Catatan <span class="text-navy-100">(opsional)</span></label>
+          <input type="text" name="catatan" maxlength="255"
+            placeholder="e.g. Hadiah ulang tahun"
+            class="w-full bg-navy-400 border border-navy-300/50 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-gold-300 transition-colors placeholder-navy-100/50">
+        </div>
+
+        <!-- Submit -->
+        <div class="flex gap-3">
+          <button type="submit"
+            class="flex-1 bg-gold-300 hover:bg-gold-200 text-navy-400 font-semibold py-3 rounded-xl transition-colors text-sm">
+            Transfer
+          </button>
+          <a href="{% url 'green:transfer_list' %}"
+            class="flex-1 text-center bg-navy-300/40 hover:bg-navy-300/60 text-white font-medium py-3 rounded-xl transition-colors text-sm">
+            Batal
+          </a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+{% endblock %}

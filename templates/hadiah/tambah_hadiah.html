@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-8">
+    <div class="bg-white p-8 rounded-lg shadow border border-gray-200">
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">Tambah Hadiah Baru</h2>
+        <p class="text-sm text-gray-500 mb-6">Kode Hadiah akan di-generate otomatis oleh sistem setelah formulir disimpan.</p>
+        
+        <form action="#" method="POST">
+            <!-- {% csrf_token %} -->
+            
+            <div class="grid grid-cols-1 gap-6">
+                <!-- Nama Hadiah -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Nama Hadiah</label>
+                    <input type="text" placeholder="Masukkan nama hadiah..." class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+
+                <!-- Penyedia -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Penyedia</label>
+                    <select class="mt-1 block w-full border bg-white border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <option value="" disabled selected>Pilih Penyedia (Maskapai / Mitra)</option>
+                        <!-- Data dummy penyedia -->
+                        <option value="1">Garuda Indonesia</option>
+                        <option value="2">Traveloka</option>
+                    </select>
+                </div>
+
+                <!-- Miles -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Harga (Miles)</label>
+                    <input type="number" placeholder="Contoh: 1500" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+
+                <!-- Deskripsi -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Deskripsi</label>
+                    <textarea rows="3" placeholder="Tuliskan deskripsi lengkap hadiah..." class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                </div>
+
+                <!-- Validitas -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Valid Start Date</label>
+                        <input type="date" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Program End</label>
+                        <input type="date" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-end space-x-3">
+                <a href="#" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none">Batal</a>
+                <button type="submit" class="bg-blue-600 border border-transparent rounded-md shadow-sm py-2 px-4 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none">Buat Hadiah</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

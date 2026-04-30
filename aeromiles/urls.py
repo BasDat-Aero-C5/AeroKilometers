@@ -23,4 +23,5 @@ urlpatterns = [
     path('green/', include('modules.green.urls')),
     path('red/', include('modules.red.urls')),
     path('blue/', include('modules.blue.urls')),
+    path('yellow/', include('modules.yellow.urls')),
 ]

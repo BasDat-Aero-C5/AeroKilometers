@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tambah Staff Baru | AeroMiles{% endblock %}
+
+{% block content %}
+
+<div class="max-w-3xl mx-auto py-10">
+  <div class="mb-8">
+    <a href="{% url 'yellow:staff_page' %}" class="inline-flex items-center gap-2 text-sm text-navy-50 hover:text-gold-300 transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 19l-7-7 7-7"/>
+      </svg>
+      Kembali ke Daftar Member
+    </a>
+    <h1 class="mt-4 font-heading text-3xl font-bold text-gold-300">Tambah Staff Baru</h1>
+    <p class="mt-2 text-sm text-navy-50/80">Lengkapi data staff dengan informasi kontak dan peran yang benar.</p>
+  </div>
+
+  <div class="bg-navy-300/30 border border-navy-300/50 shadow-lg rounded-3xl p-8">
+    <form method="post" class="space-y-6">
+      {% csrf_token %}
+
+      <div class="grid gap-5 md:grid-cols-2">
+        <div>
+          <label class="block text-sm font-medium text-navy-50 mb-2">Email</label>
+          <input type="email" name="email" required placeholder="staff@mail.com"
+            class="w-full rounded-2xl border border-navy-200/40 bg-navy-400/70 px-4 py-3 text-white text-sm placeholder-navy-100/60 focus:outline-none focus:border-gold-300 focus:ring-2 focus:ring-gold-300/20 transition-colors" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-navy-50 mb-2">Password</label>
+          <input type="password" name="password" required placeholder="Minimal 8 karakter"
+            class="w-full rounded-2xl border border-navy-200/40 bg-navy-400/70 px-4 py-3 text-white text-sm placeholder-navy-100/60 focus:outline-none focus:border-gold-300 focus:ring-2 focus:ring-gold-300/20 transition-colors" />
+        </div>
+      </div>
+
+      <div class="grid gap-5 md:grid-cols-2">
+        <div>
+          <label class="block text-sm font-medium text-navy-50 mb-2">Jabatan</label>
+          <select name="jabatan" required
+            class="w-full rounded-2xl border border-navy-200/40 bg-navy-400/70 px-4 py-3 text-white text-sm focus:outline-none focus:border-gold-300 focus:ring-2 focus:ring-gold-300/20 transition-colors">
+            <option value="">Pilih Jabatan</option>
+            <option value="Admin">Admin</option>
+            <option value="Staff">Staff</option>
+            <option value="Manager">Manager</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-navy-50 mb-2">Departemen</label>
+          <select name="departemen" required
+            class="w-full rounded-2xl border border-navy-200/40 bg-navy-400/70 px-4 py-3 text-white text-sm focus:outline-none focus:border-gold-300 focus:ring-2 focus:ring-gold-300/20 transition-colors">
+            <option value="">Pilih Departemen</option>
+            <option value="Operations">Operations</option>
+            <option value="Support">Support</option>
+            <option value="Sales">Sales</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid gap-5 md:grid-cols-2">
+        <div>
+          <label class="block text-sm font-medium text-navy-50 mb-2">Nama Depan</label>
+          <input type="text" name="nama_depan" required placeholder="Nama depan"
+            class="w-full rounded-2xl border border-navy-200/40 bg-navy-400/70 px-4 py-3 text-white text-sm placeholder-navy-100/60 focus:outline-none focus:border-gold-300 focus:ring-2 focus:ring-gold-300/20 transition-colors" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-navy-50 mb-2">Nama Belakang</label>
+          <input type="text" name="nama_belakang" required placeholder="Nama belakang"
+            class="w-full rounded-2xl border border-navy-200/40 bg-navy-400/70 px-4 py-3 text-white text-sm placeholder-navy-100/60 focus:outline-none focus:border-gold-300 focus:ring-2 focus:ring-gold-300/20 transition-colors" />
+        </div>
+      </div>
+
+      <div class="grid gap-5 md:grid-cols-2">
+        <div>
+          <label class="block text-sm font-medium text-navy-50 mb-2">Country Code</label>
+          <select name="country_code" required
+            class="w-full rounded-2xl border border-navy-200/40 bg-navy-400/70 px-4 py-3 text-white text-sm focus:outline-none focus:border-gold-300 focus:ring-2 focus:ring-gold-300/20 transition-colors">
+            <option value="+62">+62</option>
+            <option value="+65">+65</option>
+            <option value="+60">+60</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-navy-50 mb-2">Nomor HP</label>
+          <input type="tel" name="nomor_hp" required placeholder="0812xxxxxxx"
+            class="w-full rounded-2xl border border-navy-200/40 bg-navy-400/70 px-4 py-3 text-white text-sm placeholder-navy-100/60 focus:outline-none focus:border-gold-300 focus:ring-2 focus:ring-gold-300/20 transition-colors" />
+        </div>
+      </div>
+
+      <div class="grid gap-5 md:grid-cols-2">
+        <div>
+          <label class="block text-sm font-medium text-navy-50 mb-2">Tanggal Lahir</label>
+          <input type="date" name="tanggal_lahir" required
+            class="w-full rounded-2xl border border-navy-200/40 bg-navy-400/70 px-4 py-3 text-white text-sm focus:outline-none focus:border-gold-300 focus:ring-2 focus:ring-gold-300/20 transition-colors" />
+        </div>
+        <div></div>
+      </div>
+
+      <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+        <a href="{% url 'yellow:page' %}"
+          class="inline-flex items-center justify-center rounded-2xl border border-navy-200/40 bg-navy-400/70 px-5 py-3 text-sm font-medium text-white hover:bg-navy-400 transition-colors">
+          Batal
+        </a>
+        <button type="submit"
+          class="inline-flex items-center justify-center rounded-2xl bg-gold-300 px-5 py-3 text-sm font-semibold text-navy-800 hover:bg-gold-200 transition-colors">
+          Simpan Staff
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

@@ -28,6 +28,7 @@ def page_view(request):
 
     return render(request, 'member/page.html', {
         'identities': identities,
+        'navbar_type': 'member',
     })
 
 
@@ -57,6 +58,7 @@ def staff_page_view(request):
 
     return render(request, 'member/staff_page.html', {
         'members': members,
+        'navbar_type': 'staff',
     })
 
 
@@ -65,14 +67,18 @@ def form_view_staff(request):
     if request.method == 'POST':
         pass
 
-    return render(request, 'member/form_create_staff.html')
+    return render(request, 'member/form_create_staff.html', {
+        'navbar_type': 'staff',
+    })
 
 def form_view_member(request):
     ## Authentication required
     if request.method == 'POST':
         pass
 
-    return render(request, 'member/form_create_member.html')
+    return render(request, 'member/form_create_member.html', {
+        'navbar_type': 'member',
+    })
 
 
 def edit_view_staff(request, id):
@@ -92,6 +98,7 @@ def edit_view_staff(request, id):
     
     return render(request, 'member/form_edit_staff.html', {
         'member': member,
+        'navbar_type': 'staff',
     })
 
 
@@ -109,6 +116,7 @@ def edit_view_member(request, id):
     
     return render(request, 'member/form_edit_member.html', {
         'identity': identity,
+        'navbar_type': 'member',
     })
 
 

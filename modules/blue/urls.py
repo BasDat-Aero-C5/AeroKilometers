@@ -7,4 +7,6 @@ urlpatterns = [
     path('', views.redeem_hadiah, name='blue_home'),
     path('redeem/', views.redeem_hadiah, name='redeem_hadiah'),
     path('packages/', views.package_list, name='package_list'),
+    path('tier/', views.tier_info, name='tier_info'),
+    path('report/', views.report_view, name='report_view'),
 ]

@@ -49,3 +49,76 @@ def package_list(request):
         "packages": packages,
         "user_miles": 32000
     })
+
+def tier_info(request):
+    current_miles = 45000
+    current_tier = "Gold"
+
+    tiers = [
+        {
+            "name": "Blue",
+            "min_flight": 0,
+            "min_miles": 0,
+            "benefits": ["Akumulasi miles dasar", "Akses penawaran member"]
+        },
+        {
+            "name": "Silver",
+            "min_flight": 10,
+            "min_miles": 15000,
+            "benefits": ["Bonus miles 25%", "Priority check-in"]
+        },
+        {
+            "name": "Gold",
+            "min_flight": 25,
+            "min_miles": 40000,
+            "benefits": ["Bonus miles 50%", "Priority boarding", "Akses lounge"]
+        },
+        {
+            "name": "Platinum",
+            "min_flight": 50,
+            "min_miles": 80000,
+            "benefits": ["Bonus miles 100%", "Upgrade gratis", "Dedicated hotline"]
+        },
+    ]
+
+    # cari next tier
+    next_tier = None
+    for t in tiers:
+        if current_miles < t["min_miles"]:
+            next_tier = t
+            break
+
+    return render(request, "hadiah/tier.html", {
+        "tiers": tiers,
+        "current_tier": current_tier,
+        "current_miles": current_miles,
+        "next_tier": next_tier
+    })
+
+def report_view(request):
+    tab = request.GET.get("tab", "riwayat")
+
+    transactions = [
+        {"type": "Transfer", "user": "John W. Doe", "email": "john@example.com", "miles": -5000, "date": "2025-01-15 10:30"},
+        {"type": "Redeem", "user": "John W. Doe", "email": "john@example.com", "miles": -3000, "date": "2025-01-20 16:00"},
+        {"type": "Package", "user": "Jane Smith", "email": "jane@example.com", "miles": 5000, "date": "2025-02-01 09:15"},
+        {"type": "Klaim", "user": "Budi A.", "email": "budi@example.com", "miles": 2500, "date": "2025-02-05 11:45"},
+    ]
+
+    top_members = [
+        {"name": "John W. Doe", "total": 45000},
+        {"name": "Jane Smith", "total": 40000},
+    ]
+
+    summary = {
+        "total_miles": 27500,
+        "redeem": 3000,
+        "klaim": 2500
+    }
+
+    return render(request, "transfer/report.html", {
+        "transactions": transactions,
+        "summary": summary,
+        "tab": tab,
+        "top_members": top_members
+    })

@@ -116,7 +116,7 @@ def edit_view_member(request, id):
     
     return render(request, 'member/form_edit_member.html', {
         'identity': identity,
-        'navbar_type': 'member',
+
     })
 
 

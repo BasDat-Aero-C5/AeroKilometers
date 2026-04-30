@@ -7,13 +7,11 @@
      ════════════════════════════════════════════════════════════ -->
 
 <div class="min-h-screen bg-gray-100 p-6 font-body">
-  {# COLOR: outer page background — bg-gray-100 #}
 
   <!-- ── Page header ──────────────────────────────────────────── -->
   <div class="flex items-center justify-between mb-5">
 
     <h1 class="font-heading text-2xl font-bold text-navy-400">
-      {# COLOR: page title — text-navy-400 #}
       Kelola Member
     </h1>
 
@@ -52,8 +50,6 @@
                     text-navy-400 placeholder-gray-400
                     focus:outline-none focus:ring-2 focus:ring-navy-100
                     transition duration-150">
-      {# COLOR: input bg — bg-white | border — border-gray-200 | text — text-navy-400 #}
-      {# COLOR: placeholder — placeholder-gray-400 | focus ring — focus:ring-navy-100 #}
     </div>
 
     <!-- Tier filter dropdown -->
@@ -63,7 +59,6 @@
                      bg-white border-gray-200 text-navy-400
                      focus:outline-none focus:ring-2 focus:ring-navy-100
                      transition duration-150">
-        {# COLOR: dropdown bg — bg-white | border — border-gray-200 | text — text-navy-400 #}
         <option value="">Semua Tier</option>
         <option value="Gold">Gold</option>
         <option value="Silver">Silver</option>
@@ -83,18 +78,14 @@
 
   <!-- ── Card ─────────────────────────────────────────────────── -->
   <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-    {# COLOR: card bg — bg-white | border — border-gray-200 #}
-
     <table class="w-full text-sm" id="km-table">
 
       <!-- Table head -->
       <thead>
         <tr class="border-b border-gray-200">
-          {# COLOR: header bottom divider — border-gray-200 #}
           {% for col in "No. Member,Nama,Email,Tier,Total Miles,Award Miles,Bergabung"|split:"," %}
           <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider
                      text-gray-400">
-            {# COLOR: column header text — text-gray-400 #}
             {{ col }}
           </th>
           {% endfor %}
@@ -107,8 +98,6 @@
 
       <!-- Table body -->
       <tbody class="divide-y divide-gray-100">
-        {# COLOR: row dividers — divide-gray-100 #}
-
         {% for member in members %}
         <tr class="hover:bg-gray-50 transition-colors duration-100"
             {# COLOR: row hover bg — hover:bg-gray-50 #}
@@ -119,19 +108,16 @@
 
           <!-- No. Member -->
           <td class="px-4 py-3.5 font-semibold text-navy-400">
-            {# COLOR: member number — text-navy-400 #}
             {{ member.nomor_member }}
           </td>
 
           <!-- Nama -->
           <td class="px-4 py-3.5 text-navy-400">
-            {# COLOR: name text — text-navy-400 #}
             {{ member.nama }}
           </td>
 
           <!-- Email -->
           <td class="px-4 py-3.5 text-gray-400">
-            {# COLOR: email (muted) — text-gray-400 #}
             {{ member.email }}
           </td>
 
@@ -140,28 +126,24 @@
             {% if member.tier == "Gold" %}
               <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold
                            bg-gold-100 text-gold-500">
-                {# COLOR: Gold badge bg — bg-gold-100 | text — text-gold-500 #}
                 Gold
               </span>
 
             {% elif member.tier == "Silver" %}
               <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold
                            bg-gray-100 text-gray-500">
-                {# COLOR: Silver badge bg — bg-gray-100 | text — text-gray-500 #}
                 Silver
               </span>
 
             {% elif member.tier == "Platinum" %}
               <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold
                            bg-navy-50 text-navy-300">
-                {# COLOR: Platinum badge bg — bg-navy-50 | text — text-navy-300 #}
                 Platinum
               </span>
 
             {% else %}
               <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold
                            bg-navy-50 text-navy-200">
-                {# COLOR: Blue/default badge bg — bg-navy-50 | text — text-navy-200 #}
                 {{ member.tier }}
               </span>
             {% endif %}
@@ -169,7 +151,6 @@
 
           <!-- Total Miles -->
           <td class="px-4 py-3.5 text-navy-400">
-            {# COLOR: total miles — text-navy-400 #}
             {{ member.total_miles|floatformat:0 }}
           </td>
 
@@ -180,7 +161,6 @@
 
           <!-- Bergabung -->
           <td class="px-4 py-3.5 text-gray-400">
-            {# COLOR: date (muted) — text-gray-400 #}
             {{ member.tanggal_bergabung }}
           </td>
 
@@ -193,7 +173,6 @@
                  title="Edit"
                  class="p-1.5 rounded-md transition-colors duration-150
                         text-gray-400 hover:text-navy-200 hover:bg-navy-50">
-                {# COLOR: edit icon — text-gray-400 | hover text — hover:text-navy-200 | hover bg — hover:bg-navy-50 #}
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2"
                      stroke-linecap="round" stroke-linejoin="round">
@@ -211,7 +190,6 @@
                         title="Hapus"
                         class="p-1.5 rounded-md transition-colors duration-150
                                text-red-400 hover:text-red-600 hover:bg-red-50">
-                  {# COLOR: delete icon — text-red-400 | hover text — hover:text-red-600 | hover bg — hover:bg-red-50 #}
                   <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"
                        stroke="currentColor" stroke-width="2"
                        stroke-linecap="round" stroke-linejoin="round">

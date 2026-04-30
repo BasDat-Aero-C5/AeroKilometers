@@ -13,20 +13,19 @@
         </a>
       </div>
 
-      <div class="hidden lg:flex items-center gap-2 text-sm font-medium text-navy-50">
-        <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Dashboard</a>
-        <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Identitas Saya</a>
-        <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Klaim Miles</a>
-        <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Transfer Miles</a>
-        <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Redeem Hadiah</a>
-        <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Beli Package</a>
-        <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Info Tier</a>
-      </div>
-
-      <div class="hidden md:flex items-center gap-3">
-        <a href="#" class="px-5 py-2 text-navy-50 border border-navy-100 rounded-full hover:bg-navy-400 transition-colors">Login</a>
-        <a href="#" class="inline-flex items-center justify-center px-5 py-2 bg-gold-300 text-navy-800 rounded-full hover:bg-gold-400 transition-colors">Register</a>
-      </div>
+        <div class="hidden lg:flex items-center gap-2 text-sm font-medium text-navy-50">
+          <a href="{% url 'main:dashboard_member' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Dashboard</a>
+          <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Identitas Saya</a>
+          <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Klaim Miles</a>
+          <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Transfer Miles</a>
+          <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Redeem Hadiah</a>
+          <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Beli Package</a>
+          <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Info Tier</a>
+        </div>
+        <div class="hidden md:flex items-center gap-3">
+          <a href="{% url 'main:login' %}" class="px-5 py-2 text-navy-50 border border-navy-100 rounded-full hover:bg-navy-400 transition-colors">Login</a>
+          <a href="{% url 'main:register' %}" class="inline-flex items-center justify-center px-5 py-2 bg-gold-300 text-navy-800 rounded-full hover:bg-gold-400 transition-colors">Register</a>
+        </div>
 
       <div class="md:hidden flex items-center">
         <button type="button" class="mobile-menu-button inline-flex items-center justify-center p-2 rounded-full text-navy-50 border border-navy-100 hover:bg-navy-400 transition-colors">
@@ -39,19 +38,19 @@
     </div>
 
     <div class="mobile-menu hidden md:hidden pb-6">
-      <div class="space-y-3 mt-2 px-2">
-        <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Dashboard</a>
-        <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Identitas Saya</a>
-        <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Klaim Miles</a>
-        <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Transfer Miles</a>
-        <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Redeem Hadiah</a>
-        <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Beli Package</a>
-        <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Info Tier</a>
-      </div>
-      <div class="mt-4 px-2 space-y-3">
-        <a href="#" class="block rounded-full px-4 py-3 text-center text-navy-50 border border-navy-100 hover:bg-navy-400 transition-colors">Login</a>
-        <a href="#" class="block rounded-full px-4 py-3 text-center bg-gold-300 text-navy-800 hover:bg-gold-400 transition-colors">Register</a>
-      </div>
+        <div class="space-y-3 mt-2 px-2">
+          <a href="{% url 'main:dashboard_member' %}" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Dashboard</a>
+          <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Identitas Saya</a>
+          <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Klaim Miles</a>
+          <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Transfer Miles</a>
+          <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Redeem Hadiah</a>
+          <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Beli Package</a>
+          <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Info Tier</a>
+        </div>
+        <div class="mt-4 px-2 space-y-3">
+          <a href="{% url 'main:login' %}" class="block rounded-full px-4 py-3 text-center text-navy-50 border border-navy-100 hover:bg-navy-400 transition-colors">Login</a>
+          <a href="{% url 'main:register' %}" class="block rounded-full px-4 py-3 text-center bg-gold-300 text-navy-800 hover:bg-gold-400 transition-colors">Register</a>
+        </div>
     </div>
   </div>
 </nav>

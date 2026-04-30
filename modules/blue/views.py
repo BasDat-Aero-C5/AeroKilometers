@@ -36,3 +36,16 @@ def redeem_hadiah(request):
         "history": history,
         "user_miles": 32000
     })
+
+def package_list(request):
+    packages = [
+        {"code": "AMP-001", "miles": 1000, "price": 150000},
+        {"code": "AMP-002", "miles": 5000, "price": 650000},
+        {"code": "AMP-003", "miles": 10000, "price": 1200000},
+        {"code": "AMP-004", "miles": 25000, "price": 2750000},
+    ]
+
+    return render(request, "hadiah/package_list.html", {
+        "packages": packages,
+        "user_miles": 32000
+    })

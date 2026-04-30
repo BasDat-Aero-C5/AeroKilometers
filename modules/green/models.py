@@ -20,6 +20,7 @@ class Pengguna(models.Model):
     kewarganegaraan = models.CharField(max_length=50)
 
     class Meta:
+        managed = False
         db_table = 'PENGGUNA'
 
     def __str__(self):
@@ -33,6 +34,7 @@ class Tier(models.Model):
     minimal_tier_miles       = models.IntegerField()
 
     class Meta:
+        managed = False
         db_table = 'TIER'
 
     def __str__(self):
@@ -57,6 +59,7 @@ class Member(models.Model):
     total_miles       = models.IntegerField(default=0)
 
     class Meta:
+        managed = False
         db_table = 'MEMBER'
 
     def __str__(self):
@@ -67,6 +70,7 @@ class Penyedia(models.Model):
     id = models.AutoField(primary_key=True)
 
     class Meta:
+        managed = False
         db_table = 'PENYEDIA'
 
     def __str__(self):
@@ -83,6 +87,7 @@ class Maskapai(models.Model):
                      )
 
     class Meta:
+        managed = False
         db_table = 'MASKAPAI'
 
     def __str__(self):
@@ -104,6 +109,7 @@ class Staf(models.Model):
                     )
 
     class Meta:
+        managed = False
         db_table = 'STAF'
 
     def __str__(self):
@@ -117,6 +123,7 @@ class Bandara(models.Model):
     negara    = models.CharField(max_length=100)
 
     class Meta:
+        managed = False
         db_table = 'BANDARA'
 
     def __str__(self):
@@ -188,6 +195,7 @@ class ClaimMissingMiles(models.Model):
     timestamp           = models.DateTimeField(default=timezone.now)
 
     class Meta:
+        managed = False
         db_table = 'CLAIM_MISSING_MILES'
         # Prevent duplicate claims
         unique_together = [['email_member', 'flight_number', 'tanggal_penerbangan', 'nomor_tiket']]

@@ -21,5 +21,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('main.urls')),
     path('green/', include('modules.green.urls')),
-    
+    path('red/', include('modules.red.urls')),
 ]

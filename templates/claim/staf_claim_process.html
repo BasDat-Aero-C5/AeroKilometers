@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Proses Klaim | AeroMiles{% endblock %}
+
+{% block content %}
+
+  <div class="max-w-lg mx-auto mt-8">
+    <div class="bg-navy-300/30 border border-navy-300/50 rounded-2xl p-8">
+
+      <h2 class="font-heading text-2xl font-bold text-gold-300 mb-2">Proses Klaim</h2>
+      <p class="text-navy-50 text-sm mb-6">
+        Tinjau detail klaim berikut, lalu tentukan keputusan Anda.
+      </p>
+
+      <!-- Claim Detail -->
+      <div class="bg-navy-400/50 rounded-xl p-5 text-sm mb-8 space-y-3">
+        <div class="flex justify-between">
+          <span class="text-navy-50">No. Klaim</span>
+          <span class="text-gold-300 font-mono font-semibold">{{ claim.get_nomor_klaim }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-navy-50">Member</span>
+          <div class="text-right">
+            <div class="text-white font-medium">{{ claim.email_member.email.first_mid_name }} {{ claim.email_member.email.last_name }}</div>
+            <div class="text-navy-50 text-xs">{{ claim.email_member.email_id }}</div>
+          </div>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-navy-50">Maskapai</span>
+          <span class="text-white">{{ claim.maskapai.nama_maskapai }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-navy-50">Rute</span>
+          <span class="text-white font-mono">{{ claim.bandara_asal.iata_code }} → {{ claim.bandara_tujuan.iata_code }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-navy-50">Tanggal Penerbangan</span>
+          <span class="text-white">{{ claim.tanggal_penerbangan }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-navy-50">Flight Number</span>
+          <span class="text-white font-mono">{{ claim.flight_number }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-navy-50">Nomor Tiket</span>
+          <span class="text-white font-mono">{{ claim.nomor_tiket }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-navy-50">Kelas Kabin</span>
+          <span class="text-white">{{ claim.kelas_kabin }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-navy-50">PNR</span>
+          <span class="text-white font-mono">{{ claim.pnr }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-navy-50">Miles (jika disetujui)</span>
+          <span class="text-gold-300 font-semibold">
+            {% if claim.kelas_kabin == 'Economy' %}+500
+            {% elif claim.kelas_kabin == 'Premium Economy' %}+750
+            {% elif claim.kelas_kabin == 'Business' %}+1000
+            {% elif claim.kelas_kabin == 'First' %}+1500
+            {% endif %} miles
+          </span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <form method="POST" class="flex gap-3">
+        {% csrf_token %}
+        <button type="submit" name="action" value="Disetujui"
+          class="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-xl transition-colors text-sm">
+          ✓ Setujui
+        </button>
+        <button type="submit" name="action" value="Ditolak"
+          class="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 rounded-xl transition-colors text-sm">
+          ✗ Tolak
+        </button>
+        <a href="{% url 'green:staf_claim_list' %}"
+          class="flex-1 text-center bg-navy-300/40 hover:bg-navy-300/60 text-white font-medium py-3 rounded-xl transition-colors text-sm">
+          Batal
+        </a>
+      </form>
+
+    </div>
+  </div>
+
+{% endblock %}

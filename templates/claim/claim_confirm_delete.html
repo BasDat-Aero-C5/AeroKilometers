@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Batalkan Klaim | AeroMiles{% endblock %}
+
+{% block content %}
+
+  <div class="max-w-md mx-auto mt-8">
+    <div class="bg-navy-300/30 border border-red-500/30 rounded-2xl p-8 text-center">
+
+      <!-- Icon -->
+      <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+        <svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        </svg>
+      </div>
+
+      <h2 class="font-heading text-2xl font-bold text-white mb-2">Batalkan Klaim?</h2>
+      <p class="text-navy-50 text-sm mb-6">
+        Klaim <span class="text-gold-300 font-mono font-semibold">{{ claim.get_nomor_klaim }}</span>
+        akan dihapus secara permanen dan tidak dapat dikembalikan.
+      </p>
+
+      <!-- Claim Info -->
+      <div class="bg-navy-400/50 rounded-xl p-4 text-left text-sm mb-8 space-y-2">
+        <div class="flex justify-between">
+          <span class="text-navy-50">Maskapai</span>
+          <span class="text-white font-medium">{{ claim.maskapai.nama_maskapai }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-navy-50">Rute</span>
+          <span class="text-white font-mono">{{ claim.bandara_asal.iata_code }} → {{ claim.bandara_tujuan.iata_code }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-navy-50">Tanggal</span>
+          <span class="text-white">{{ claim.tanggal_penerbangan }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-navy-50">Flight</span>
+          <span class="text-white font-mono">{{ claim.flight_number }}</span>
+        </div>
+      </div>
+
+      <form method="POST" class="flex gap-3">
+        {% csrf_token %}
+        <button type="submit"
+          class="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 rounded-xl transition-colors text-sm">
+          Ya, Batalkan
+        </button>
+        <a href="{% url 'green:claim_list' %}"
+          class="flex-1 text-center bg-navy-300/40 hover:bg-navy-300/60 text-white font-medium py-3 rounded-xl transition-colors text-sm">
+          Kembali
+        </a>
+      </form>
+
+    </div>
+  </div>
+
+{% endblock %}

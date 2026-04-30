@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container">
+    <h2>Redeem Hadiah</h2>
+    <p class="miles">Award Miles tersedia: <b>{{ user_miles }}</b></p>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <a href="?tab=katalog" class="{% if tab == 'katalog' %}active{% endif %}">Katalog Hadiah</a>
+        <a href="?tab=riwayat" class="{% if tab == 'riwayat' %}active{% endif %}">Riwayat Redeem</a>
+    </div>
+
+    {% if tab == "katalog" %}
+
+    <div class="grid">
+        {% for r in rewards %}
+        <div class="card">
+            <div class="badge">{{ r.code }} - {{ r.partner }}</div>
+            <h3>{{ r.name }}</h3>
+            <p>{{ r.desc }}</p>
+            <p><b>{{ r.miles }} miles</b></p>
+            <p class="period">Periode: {{ r.period }}</p>
+
+            <button class="btn-red" onclick="openModal('{{ r.name }}', '{{ r.miles }}', '{{ r.code }}', '{{ r.partner }}')">
+                REDEEM
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+
+    <table class="table">
+        <tr>
+            <th>Hadiah</th>
+            <th>Waktu</th>
+            <th>Miles</th>
+            <th>Aksi</th>
+        </tr>
+        {% for h in history %}
+        <tr>
+            <td>{{ h.name }}</td>
+            <td>{{ h.date }}</td>
+            <td class="minus">{{ h.miles }}</td>
+            <td>🔒</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    {% endif %}
+</div>
+
+<!-- MODAL -->
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <h3>Redeem Miles</h3>
+        <p id="modal-text"></p>
+
+        <div class="modal-actions">
+            <button onclick="closeModal()">Batal</button>
+            <button class="btn-primary">Redeem</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.container {
+    padding: 20px;
+}
+
+.tabs a {
+    padding: 8px 12px;
+    background: #eee;
+    margin-right: 5px;
+    border-radius: 6px;
+    text-decoration: none;
+}
+
+.tabs .active {
+    background: #04396d;
+    color: white;
+}
+
+.grid {
+    display: flex;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.card {
+    border: 1px solid #ddd;
+    padding: 16px;
+    border-radius: 10px;
+    width: 280px;
+}
+
+.badge {
+    background: #04396d;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.btn-red {
+    background: #c0392b;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    margin-top: 10px;
+    border-radius: 6px;
+}
+
+.table {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+}
+
+.table th, .table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+}
+
+.minus {
+    color: red;
+}
+
+/* MODAL */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    width: 400px;
+    margin: 150px auto;
+    border-radius: 10px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+</style>
+
+<script>
+function openModal(name, miles, code, partner) {
+    document.getElementById("modal").style.display = "block";
+    document.getElementById("modal-text").innerText =
+        `Miles akan dipotong sebesar ${miles} untuk reward ${name} dengan kode ${code} dari ${partner}`;
+}
+
+function closeModal() {
+    document.getElementById("modal").style.display = "none";
+}
+</script>
+
+{% endblock %}

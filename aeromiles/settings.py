@@ -45,9 +45,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'main',
     'modules.green',
-    'modules.blue',
-    'modules.red',
-    'modules.yellow'
 ]
 
 MIDDLEWARE = [

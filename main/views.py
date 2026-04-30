@@ -63,3 +63,27 @@ def dashboard_staff(request):
         "user": user_data,
         "staff": staff_data,
     })
+
+def profile_view(request):
+    role = request.GET.get("role", "member")
+
+    user = {
+        "email": "john@example.com",
+        "member_id": "M0001",
+        "staff_id": "S0001",
+        "joined": "2024-01-15",
+        "salutation": "Mr.",
+        "first": "John",
+        "middle": "William",
+        "last": "Doe",
+        "nationality": "Indonesia",
+        "country_code": "+62",
+        "phone": "81234567890",
+        "birthdate": "1990-05-15",
+        "airline": "Garuda Indonesia"
+    }
+
+    return render(request, "profile.html", {
+        "user": user,
+        "role": role
+    })

@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if is_edit %}Edit Klaim{% else %}Ajukan Klaim{% endif %} | AeroMiles{% endblock %}
+
+{% block content %}
+
+  <div class="max-w-2xl mx-auto">
+
+    <!-- Header -->
+    <div class="mb-8">
+      <a href="{% url 'green:claim_list' %}" class="text-navy-50 hover:text-gold-300 text-sm flex items-center gap-1 mb-4 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+        Kembali
+      </a>
+      <h1 class="font-heading text-3xl font-bold text-gold-300">
+        {% if is_edit %}Edit Klaim{% else %}Ajukan Klaim Baru{% endif %}
+      </h1>
+      <p class="text-navy-50 text-sm mt-1">
+        {% if is_edit %}Perbarui informasi klaim Anda{% else %}Isi form berikut untuk mengajukan missing miles{% endif %}
+      </p>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+      {% for message in messages %}
+        <div class="mb-4 px-4 py-3 rounded-xl text-sm font-medium
+          {% if message.tags == 'success' %}bg-green-500/20 text-green-300 border border-green-500/30
+          {% else %}bg-red-500/20 text-red-300 border border-red-500/30{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- Form Card -->
+    <div class="bg-navy-300/30 border border-navy-300/50 rounded-2xl p-8">
+      <form method="POST">
+        {% csrf_token %}
+
+        <!-- Maskapai -->
+        <div class="mb-5">
+          <label class="block text-sm font-medium text-navy-50 mb-2">Maskapai</label>
+          <select name="maskapai" required
+            class="w-full bg-navy-400 border border-navy-300/50 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-gold-300 transition-colors">
+            <option value="">-- Pilih Maskapai --</option>
+            {% for m in maskapais %}
+              <option value="{{ m.kode_maskapai }}"
+                {% if is_edit and claim.maskapai.kode_maskapai == m.kode_maskapai %}selected{% endif %}>
+                {{ m.kode_maskapai }} - {{ m.nama_maskapai }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Bandara -->
+        <div class="grid grid-cols-2 gap-4 mb-5">
+          <div>
+            <label class="block text-sm font-medium text-navy-50 mb-2">Bandara Asal (IATA)</label>
+            <select name="bandara_asal" required
+              class="w-full bg-navy-400 border border-navy-300/50 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-gold-300 transition-colors">
+              <option value="">-- Pilih --</option>
+              {% for b in bandaras %}
+                <option value="{{ b.iata_code }}"
+                  {% if is_edit and claim.bandara_asal.iata_code == b.iata_code %}selected{% endif %}>
+                  {{ b.iata_code }} - {{ b.kota }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-navy-50 mb-2">Bandara Tujuan (IATA)</label>
+            <select name="bandara_tujuan" required
+              class="w-full bg-navy-400 border border-navy-300/50 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-gold-300 transition-colors">
+              <option value="">-- Pilih --</option>
+              {% for b in bandaras %}
+                <option value="{{ b.iata_code }}"
+                  {% if is_edit and claim.bandara_tujuan.iata_code == b.iata_code %}selected{% endif %}>
+                  {{ b.iata_code }} - {{ b.kota }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <!-- Tanggal & Flight -->
+        <div class="grid grid-cols-2 gap-4 mb-5">
+          <div>
+            <label class="block text-sm font-medium text-navy-50 mb-2">Tanggal Penerbangan</label>
+            <input type="date" name="tanggal_penerbangan" required
+              value="{% if is_edit %}{{ claim.tanggal_penerbangan|date:'Y-m-d' }}{% endif %}"
+              class="w-full bg-navy-400 border border-navy-300/50 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-gold-300 transition-colors">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-navy-50 mb-2">Flight Number</label>
+            <input type="text" name="flight_number" required maxlength="10"
+              value="{% if is_edit %}{{ claim.flight_number }}{% endif %}"
+              placeholder="e.g. GA404"
+              class="w-full bg-navy-400 border border-navy-300/50 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-gold-300 transition-colors placeholder-navy-100/50">
+          </div>
+        </div>
+
+        <!-- Nomor Tiket & PNR -->
+        <div class="grid grid-cols-2 gap-4 mb-5">
+          <div>
+            <label class="block text-sm font-medium text-navy-50 mb-2">Nomor Tiket</label>
+            <input type="text" name="nomor_tiket" required maxlength="20"
+              value="{% if is_edit %}{{ claim.nomor_tiket }}{% endif %}"
+              placeholder="e.g. 0123456789012"
+              class="w-full bg-navy-400 border border-navy-300/50 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-gold-300 transition-colors placeholder-navy-100/50">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-navy-50 mb-2">PNR</label>
+            <input type="text" name="pnr" required maxlength="10"
+              value="{% if is_edit %}{{ claim.pnr }}{% endif %}"
+              placeholder="e.g. ABC123"
+              class="w-full bg-navy-400 border border-navy-300/50 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-gold-300 transition-colors placeholder-navy-100/50">
+          </div>
+        </div>
+
+        <!-- Kelas Kabin -->
+        <div class="mb-8">
+          <label class="block text-sm font-medium text-navy-50 mb-2">Kelas Kabin</label>
+          <select name="kelas_kabin" required
+            class="w-full bg-navy-400 border border-navy-300/50 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-gold-300 transition-colors">
+            <option value="">-- Pilih Kelas --</option>
+            {% for value, label in kelas_choices %}
+              <option value="{{ value }}"
+                {% if is_edit and claim.kelas_kabin == value %}selected{% endif %}>
+                {{ label }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Submit -->
+        <div class="flex gap-3">
+          <button type="submit"
+            class="flex-1 bg-gold-300 hover:bg-gold-200 text-navy-400 font-semibold py-3 rounded-xl transition-colors text-sm">
+            {% if is_edit %}Simpan Perubahan{% else %}Ajukan Klaim{% endif %}
+          </button>
+          <a href="{% url 'green:claim_list' %}"
+            class="flex-1 text-center bg-navy-300/40 hover:bg-navy-300/60 text-white font-medium py-3 rounded-xl transition-colors text-sm">
+            Batal
+          </a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+{% endblock %}

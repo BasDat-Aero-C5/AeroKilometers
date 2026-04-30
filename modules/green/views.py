@@ -55,7 +55,7 @@ def login_required_staf(view_func):
 
 #  FITUR 8 - Claim Missing Miles (MEMBER)
 
-@login_required_member
+#@login_required_member
 def claim_list(request):
     """R — Riwayat klaim milik member, dengan filter status."""
     member = get_member(request)
@@ -77,7 +77,7 @@ def claim_list(request):
     return render(request, 'claim/claim_list.html', context)
 
 
-@login_required_member
+#@login_required_member
 def claim_create(request):
     """C — Ajukan klaim baru."""
     member    = get_member(request)
@@ -152,7 +152,7 @@ def claim_create(request):
     })
 
 
-@login_required_member
+#@login_required_member
 def claim_edit(request, pk):
     """U — Edit klaim, hanya jika status Menunggu."""
     member = get_member(request)
@@ -225,7 +225,7 @@ def claim_edit(request, pk):
     })
 
 
-@login_required_member
+#@login_required_member
 def claim_delete(request, pk):
     """D — Batalkan klaim, hanya jika status Menunggu."""
     member = get_member(request)
@@ -249,7 +249,7 @@ def claim_delete(request, pk):
 
 #  FITUR 9 - Claim Missing Miles(STAF)
 
-@login_required_staf
+#@login_required_staf
 def staf_claim_list(request):
     """R — Daftar semua klaim dari semua member, dengan filter."""
     staf = get_staf(request)
@@ -291,7 +291,7 @@ def staf_claim_list(request):
     return render(request, 'claim/staf_claim_list.html', context)
 
 
-@login_required_staf
+#@login_required_staf
 def staf_claim_proses(request, pk):
     """U — Ubah status klaim menjadi Disetujui atau Ditolak."""
     staf  = get_staf(request)

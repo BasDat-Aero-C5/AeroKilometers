@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Kelola Klaim Missing Miles | AeroMiles{% endblock %}
+
+{% block content %}
+
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="font-heading text-3xl font-bold text-gold-300">Kelola Klaim Missing Miles</h1>
+    <p class="text-navy-50 text-sm mt-1">Verifikasi dan proses klaim dari seluruh member</p>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="mb-4 px-4 py-3 rounded-xl text-sm font-medium
+        {% if message.tags == 'success' %}bg-green-500/20 text-green-300 border border-green-500/30
+        {% else %}bg-red-500/20 text-red-300 border border-red-500/30{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Filters -->
+  <div class="bg-navy-300/30 border border-navy-300/50 rounded-2xl p-5 mb-6">
+    <form method="GET" class="flex flex-wrap gap-4 items-end">
+      <div>
+        <label class="block text-xs text-navy-50 mb-1.5">Status</label>
+        <select name="status"
+          class="bg-navy-400 border border-navy-300/50 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-300">
+          {% for s in status_choices %}
+            <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-navy-50 mb-1.5">Maskapai</label>
+        <select name="maskapai"
+          class="bg-navy-400 border border-navy-300/50 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-300">
+          <option value="">Semua Maskapai</option>
+          {% for m in maskapais %}
+            <option value="{{ m.kode_maskapai }}" {% if maskapai_filter == m.kode_maskapai %}selected{% endif %}>
+              {{ m.kode_maskapai }} - {{ m.nama_maskapai }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-navy-50 mb-1.5">Tanggal Dari</label>
+        <input type="date" name="tgl_dari" value="{{ tgl_dari }}"
+          class="bg-navy-400 border border-navy-300/50 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-300">
+      </div>
+      <div>
+        <label class="block text-xs text-navy-50 mb-1.5">Tanggal Sampai</label>
+        <input type="date" name="tgl_sampai" value="{{ tgl_sampai }}"
+          class="bg-navy-400 border border-navy-300/50 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-300">
+      </div>
+      <button type="submit"
+        class="bg-gold-300 hover:bg-gold-200 text-navy-400 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+        Filter
+      </button>
+      <a href="{% url 'green:staf_claim_list' %}"
+        class="bg-navy-300/40 hover:bg-navy-300/60 text-white px-5 py-2.5 rounded-xl text-sm transition-colors">
+        Reset
+      </a>
+    </form>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-navy-300/30 border border-navy-300/50 rounded-2xl overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-navy-300/50 text-navy-50 text-xs uppercase tracking-wider">
+            <th class="px-5 py-4 text-left">ID Klaim</th>
+            <th class="px-5 py-4 text-left">Member</th>
+            <th class="px-5 py-4 text-left">Maskapai</th>
+            <th class="px-5 py-4 text-left">Rute</th>
+            <th class="px-5 py-4 text-left">Tanggal</th>
+            <th class="px-5 py-4 text-left">Flight</th>
+            <th class="px-5 py-4 text-left">Kelas</th>
+            <th class="px-5 py-4 text-left">Pengajuan</th>
+            <th class="px-5 py-4 text-left">Status</th>
+            <th class="px-5 py-4 text-left">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-navy-300/30">
+          {% for claim in claims %}
+          <tr class="hover:bg-navy-300/20 transition-colors">
+            <td class="px-5 py-4 font-mono font-medium text-gold-300">{{ claim.get_nomor_klaim }}</td>
+            <td class="px-5 py-4">
+              <div class="font-medium text-white">{{ claim.email_member.email.first_mid_name }} {{ claim.email_member.email.last_name }}</div>
+              <div class="text-navy-50 text-xs">{{ claim.email_member.email_id }}</div>
+            </td>
+            <td class="px-5 py-4">{{ claim.maskapai.nama_maskapai }}</td>
+            <td class="px-5 py-4 font-mono">{{ claim.bandara_asal.iata_code }} → {{ claim.bandara_tujuan.iata_code }}</td>
+            <td class="px-5 py-4 text-navy-50">{{ claim.tanggal_penerbangan }}</td>
+            <td class="px-5 py-4 font-mono">{{ claim.flight_number }}</td>
+            <td class="px-5 py-4">{{ claim.kelas_kabin }}</td>
+            <td class="px-5 py-4 text-navy-50 text-xs">{{ claim.timestamp|date:"d/m/Y H:i" }}</td>
+            <td class="px-5 py-4">
+              {% if claim.status_penerimaan == 'Menunggu' %}
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-500/20 text-yellow-300 border border-yellow-500/30">Menunggu</span>
+              {% elif claim.status_penerimaan == 'Disetujui' %}
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-300 border border-green-500/30">Disetujui</span>
+              {% else %}
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-300 border border-red-500/30">Ditolak</span>
+              {% endif %}
+            </td>
+            <td class="px-5 py-4">
+              {% if claim.status_penerimaan == 'Menunggu' %}
+                <a href="{% url 'green:staf_claim_proses' claim.pk %}"
+                   class="px-3 py-1.5 bg-gold-300/20 hover:bg-gold-300/30 text-gold-300 border border-gold-300/30 rounded-lg text-xs font-medium transition-colors">
+                  Proses
+                </a>
+              {% else %}
+                <span class="text-navy-50 text-xs">Selesai</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="10" class="px-5 py-12 text-center text-navy-50">
+              Tidak ada klaim ditemukan.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+{% endblock %}

@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class BlueConfig(AppConfig):
-    name = 'blue'
+    name = 'modules.blue'

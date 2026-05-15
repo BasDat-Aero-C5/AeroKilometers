@@ -5,11 +5,11 @@ def homepage(request):
     return render(request, 'homepage.html')
 
 def login(request):
-    return render(request, 'login.html')
+    return render(request, 'login.html', {'navbar_type':'guest'})
 
 def register(request):
     # test
-    return render(request, 'register.html')
+    return render(request, 'register.html', {'navbar_type':'guest'})
 
 def dashboard_member(request):
     user_data = {

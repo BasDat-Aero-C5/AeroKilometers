@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Tambah Staff Baru | AeroMiles{% endblock %}
+{% block title %}Tambah Member Baru | AeroMiles{% endblock %}
 
 {% block content %}
 
@@ -13,8 +13,8 @@
       </svg>
       Kembali ke Daftar Member
     </a>
-    <h1 class="mt-4 font-heading text-3xl font-bold text-gold-300">Tambah Staff Baru</h1>
-    <p class="mt-2 text-sm text-navy-50/80">Lengkapi data staff dengan informasi kontak dan peran yang benar.</p>
+    <h1 class="mt-4 font-heading text-3xl font-bold text-gold-300">Tambah Member Baru</h1>
+    <p class="mt-2 text-sm text-navy-50/80">Isi data member baru seperti nama, email, nomor telepon, dan tier.</p>
   </div>
 
   <div class="bg-navy-300/30 border border-navy-300/50 shadow-lg rounded-3xl p-8">
@@ -37,24 +37,20 @@
 
       <div class="grid gap-5 md:grid-cols-2">
         <div>
-          <label class="block text-sm font-medium text-navy-50 mb-2">Jabatan</label>
-          <select name="jabatan" required
-            class="w-full rounded-2xl border border-navy-200/40 bg-navy-400/70 px-4 py-3 text-white text-sm focus:outline-none focus:border-gold-300 focus:ring-2 focus:ring-gold-300/20 transition-colors">
-            <option value="">Pilih Jabatan</option>
-            <option value="Admin">Admin</option>
-            <option value="Staff">Staff</option>
-            <option value="Manager">Manager</option>
-          </select>
+          <label class="block text-sm font-medium text-navy-50 mb-2">Nomor Member</label>
+          <input type="text" name="nomor_member" required placeholder="M0001"
+            class="w-full rounded-2xl border border-navy-200/40 bg-navy-400/70 px-4 py-3 text-white text-sm placeholder-navy-100/60 focus:outline-none focus:border-gold-300 focus:ring-2 focus:ring-gold-300/20 transition-colors" />
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-navy-50 mb-2">Departemen</label>
-          <select name="departemen" required
+          <label class="block text-sm font-medium text-navy-50 mb-2">Tier</label>
+          <select name="tier" required
             class="w-full rounded-2xl border border-navy-200/40 bg-navy-400/70 px-4 py-3 text-white text-sm focus:outline-none focus:border-gold-300 focus:ring-2 focus:ring-gold-300/20 transition-colors">
-            <option value="">Pilih Departemen</option>
-            <option value="Operations">Operations</option>
-            <option value="Support">Support</option>
-            <option value="Sales">Sales</option>
+            <option value="">Pilih Tier</option>
+            <option value="Gold">Gold</option>
+            <option value="Silver">Silver</option>
+            <option value="Blue">Blue</option>
+            <option value="Platinum">Platinum</option>
           </select>
         </div>
       </div>
@@ -101,13 +97,13 @@
       </div>
 
       <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
-        <a href="{% url 'yellow:page' %}"
+        <a href="{% url 'yellow:staff_page' %}"
           class="inline-flex items-center justify-center rounded-2xl border border-navy-200/40 bg-navy-400/70 px-5 py-3 text-sm font-medium text-white hover:bg-navy-400 transition-colors">
           Batal
         </a>
         <button type="submit"
           class="inline-flex items-center justify-center rounded-2xl bg-gold-300 px-5 py-3 text-sm font-semibold text-navy-800 hover:bg-gold-200 transition-colors">
-          Simpan Staff
+          Simpan Member
         </button>
       </div>
     </form>

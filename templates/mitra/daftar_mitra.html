@@ -9,6 +9,14 @@
         </a>
     </div>
 
+    {% if messages %}
+        <div class="mb-4 space-y-2">
+            {% for message in messages %}
+                <div class="bg-white border border-gray-200 text-gray-800 px-4 py-3 rounded-md shadow-sm">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
     <!-- Table Section -->
     <div class="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
         <table class="min-w-full divide-y divide-gray-200">
@@ -22,31 +30,22 @@
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-                
-                <!-- Data Dummy 1 -->
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">contact@traveloka.com</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">102</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Traveloka</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">15/03/2025</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <a href="{% url 'red:edit_mitra' %}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
-                        <a href="{% url 'red:hapus_mitra' %}" class="text-red-600 hover:text-red-900">Hapus</a>
-                    </td>
-                </tr>
-
-                <!-- Data Dummy 2 -->
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">partnership@tiket.com</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">103</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Tiket.com</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">10/06/2025</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <a href="{% url 'red:edit_mitra' %}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
-                        <a href="{% url 'red:hapus_mitra' %}" class="text-red-600 hover:text-red-900">Hapus</a>
-                    </td>
-                </tr>
-                
+                {% for mitra in mitra_list %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ mitra.email_mitra }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ mitra.id_penyedia_id }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ mitra.nama_mitra }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ mitra.tanggal_kerja_sama|date:"d/m/Y" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <a href="{% url 'red:edit_mitra' mitra.email_mitra %}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
+                            <a href="{% url 'red:hapus_mitra' mitra.email_mitra %}" class="text-red-600 hover:text-red-900">Hapus</a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500">Belum ada data mitra.</td>
+                    </tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>

@@ -18,7 +18,8 @@
       </div>
 
       <!-- Form Body -->
-      <form class="px-6 py-4 space-y-4">
+      <form class="px-6 py-4 space-y-4" method="POST">
+        {% csrf_token %}
         <!-- Nomor Dokumen -->
         <div>
           <label class="block text-sm font-semibold text-navy-400 mb-1">Nomor Dokumen</label>

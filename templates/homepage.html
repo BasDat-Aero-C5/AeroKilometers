@@ -1,0 +1,352 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}AeroMiles — Travel Loyalty{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── Animated gradient mesh background ── */
+  .hero-bg {
+    background:
+      radial-gradient(ellipse 80% 60% at 60% 20%, rgba(1,91,151,0.45) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 10% 80%, rgba(243,203,81,0.12) 0%, transparent 55%),
+      radial-gradient(ellipse 60% 50% at 90% 90%, rgba(4,57,109,0.5) 0%, transparent 60%);
+  }
+
+  /* ── Noise grain overlay ── */
+  .grain::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Gold shimmer on text ── */
+  .gold-shimmer {
+    background: linear-gradient(90deg, #eec55b 0%, #f8e48b 40%, #bf9c4a 70%, #f3cb51 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 4s linear infinite;
+  }
+  @keyframes shimmer {
+    0%   { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+
+  /* ── Staggered fade-in ── */
+  .fade-up {
+    opacity: 0;
+    transform: translateY(28px);
+    animation: fadeUp 0.7s ease forwards;
+  }
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .delay-1 { animation-delay: 0.1s; }
+  .delay-2 { animation-delay: 0.25s; }
+  .delay-3 { animation-delay: 0.4s; }
+  .delay-4 { animation-delay: 0.55s; }
+  .delay-5 { animation-delay: 0.7s; }
+
+  /* ── Floating plane ── */
+  @keyframes floatPlane {
+    0%, 100% { transform: translateY(0px) rotate(-2deg); }
+    50%       { transform: translateY(-18px) rotate(2deg); }
+  }
+  .float-plane { animation: floatPlane 6s ease-in-out infinite; }
+
+  /* ── Card hover lift ── */
+  .card-lift {
+    transition: transform 0.3s cubic-bezier(.25,.8,.25,1), box-shadow 0.3s ease;
+  }
+  .card-lift:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  }
+
+  /* ── Tier badge glow ── */
+  .tier-glow {
+    box-shadow: 0 0 20px rgba(243,203,81,0.3);
+    transition: box-shadow 0.3s ease;
+  }
+  .tier-glow:hover {
+    box-shadow: 0 0 40px rgba(243,203,81,0.55);
+  }
+
+  /* ── Scrolling ticker ── */
+  .ticker-inner {
+    display: flex;
+    gap: 3rem;
+    animation: ticker 28s linear infinite;
+    white-space: nowrap;
+  }
+  @keyframes ticker {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+
+  /* ── Dashed route line ── */
+  .route-line {
+    flex: 1;
+    border-top: 2px dashed rgba(178,205,224,0.3);
+    position: relative;
+    top: -3px;
+  }
+
+  /* ── Step connector ── */
+  .step-connector {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(243,203,81,0.5), transparent);
+  }
+
+  /* ── Subtle grid bg for section ── */
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(1,91,151,0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(1,91,151,0.07) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* ── CTA button pulse ── */
+  .btn-gold {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .btn-gold::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.12);
+    transform: translateX(-100%) skewX(-20deg);
+    transition: transform 0.4s ease;
+  }
+  .btn-gold:hover::before { transform: translateX(120%) skewX(-20deg); }
+  .btn-gold:hover {
+    transform: scale(1.04);
+    box-shadow: 0 8px 30px rgba(243,203,81,0.4);
+  }
+
+  /* ── Scroll indicator ── */
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(8px); }
+  }
+  .bounce { animation: bounce 1.8s ease-in-out infinite; }
+
+  /* ── Stats counter pulse ── */
+  @keyframes countPulse {
+    0%   { opacity: 0; transform: scale(0.85); }
+    60%  { transform: scale(1.05); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .stat-num { animation: countPulse 0.6s ease forwards; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<section class="relative min-h-[88vh] flex items-center hero-bg grain rounded-3xl overflow-hidden mb-16 px-8 md:px-16">
+
+  <!-- Decorative circles -->
+  <div class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-navy-200/10 blur-3xl pointer-events-none"></div>
+  <div class="absolute bottom-0 left-0 w-72 h-72 rounded-full bg-gold-300/8 blur-3xl pointer-events-none"></div>
+
+  <!-- Left: copy -->
+  <div class="relative z-10 flex-1 max-w-2xl py-20">
+    <!-- Badge -->
+    <span class="fade-up delay-1 inline-flex items-center gap-2 bg-navy-200/20 border border-navy-100/30 text-navy-50 text-xs font-medium tracking-widest uppercase px-4 py-2 rounded-full mb-8">
+      <span class="w-2 h-2 rounded-full bg-gold-300 animate-pulse"></span>
+      Loyalty Program Penerbangan Premium
+    </span>
+
+    <!-- Headline -->
+    <h1 class="fade-up delay-2 font-heading text-5xl md:text-7xl leading-[1.07] mb-6">
+      Terbang Lebih <br>
+      <span class="gold-shimmer">Jauh.</span> Nikmati<br>
+      Lebih <span class="gold-shimmer">Banyak.</span>
+    </h1>
+
+    <!-- Sub -->
+    <p class="fade-up delay-3 text-navy-50/80 text-lg md:text-xl leading-relaxed mb-10 max-w-lg">
+      Kumpulkan miles dari setiap penerbangan, tukarkan dengan hadiah eksklusif,
+      dan naiki tier menuju pengalaman perjalanan tanpa batas.
+    </p>
+
+    <!-- CTAs -->
+    <div class="fade-up delay-4 flex flex-wrap items-center gap-4">
+      <a href="{% url 'main:register' %}"
+         class="btn-gold inline-flex items-center gap-2 bg-gold-300 text-navy-400 font-semibold px-8 py-4 rounded-full text-sm tracking-wide">
+        Mulai Gratis
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+        </svg>
+      </a>
+      <a href="{% url 'main:login' %}"
+         class="inline-flex items-center gap-2 border border-navy-100/50 text-navy-50 hover:bg-navy-300/50 font-medium px-8 py-4 rounded-full text-sm tracking-wide transition-colors">
+        Masuk Akun
+      </a>
+    </div>
+
+    <!-- Scroll hint -->
+    <div class="fade-up delay-5 mt-16 flex items-center gap-3 text-navy-50/40 text-xs tracking-widest uppercase">
+      <div class="bounce">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </div>
+      Scroll ke bawah
+    </div>
+  </div>
+
+  <!-- Right: floating plane illustration -->
+  <div class="hidden lg:flex flex-1 justify-center items-center relative z-10">
+    <div class="float-plane relative">
+      <!-- Plane SVG -->
+      <svg viewBox="0 0 480 340" class="w-[480px] drop-shadow-2xl" xmlns="http://www.w3.org/2000/svg">
+        <!-- Trail -->
+        <path d="M50,280 Q160,200 360,120" stroke="rgba(243,203,81,0.25)" stroke-width="2" fill="none" stroke-dasharray="8 6"/>
+        <!-- Glow circle behind plane -->
+        <circle cx="340" cy="130" r="80" fill="rgba(243,203,81,0.06)"/>
+        <!-- Plane body -->
+        <ellipse cx="310" cy="145" rx="130" ry="28" fill="#015b97" transform="rotate(-18,310,145)"/>
+        <!-- Cockpit -->
+        <ellipse cx="400" cy="118" rx="28" ry="16" fill="#6497b2" transform="rotate(-18,400,118)"/>
+        <!-- Wing top -->
+        <path d="M290,135 L330,80 L380,100 L310,148 Z" fill="#04396d" transform="rotate(-18,310,145)"/>
+        <!-- Wing bottom -->
+        <path d="M250,158 L210,185 L240,188 L295,162 Z" fill="#04396d" transform="rotate(-18,310,145)"/>
+        <!-- Tail fins -->
+        <path d="M175,165 L155,140 L195,150 Z" fill="#6497b2" transform="rotate(-18,310,145)"/>
+        <path d="M170,155 L165,175 L195,165 Z" fill="#6497b2" transform="rotate(-18,310,145)"/>
+        <!-- Gold stripe -->
+        <path d="M190,150 L420,108" stroke="#f3cb51" stroke-width="3" stroke-linecap="round" transform="rotate(-18,310,145)"/>
+        <!-- Windows -->
+        <circle cx="340" cy="139" r="5" fill="rgba(178,205,224,0.7)" transform="rotate(-18,310,145)"/>
+        <circle cx="358" cy="134" r="5" fill="rgba(178,205,224,0.7)" transform="rotate(-18,310,145)"/>
+        <circle cx="376" cy="129" r="5" fill="rgba(178,205,224,0.7)" transform="rotate(-18,310,145)"/>
+        <!-- Stars / sparkles -->
+        <circle cx="120" cy="70" r="2" fill="rgba(243,203,81,0.7)"/>
+        <circle cx="430" cy="200" r="2.5" fill="rgba(243,203,81,0.5)"/>
+        <circle cx="60" cy="180" r="1.5" fill="rgba(243,203,81,0.4)"/>
+        <circle cx="240" cy="40" r="2" fill="rgba(178,205,224,0.5)"/>
+      </svg>
+
+      <!-- Miles card floating -->
+      <div class="absolute -bottom-4 -left-8 bg-navy-300/80 backdrop-blur border border-navy-100/30 rounded-2xl px-5 py-4 shadow-2xl">
+        <p class="text-navy-50/60 text-[10px] uppercase tracking-widest mb-1">Miles Terkumpul</p>
+        <p class="font-heading text-gold-300 text-3xl">128,450</p>
+      </div>
+
+      <!-- Tier badge floating -->
+      <div class="absolute -top-2 -right-4 bg-gold-300 text-navy-400 rounded-2xl px-4 py-3 shadow-xl">
+        <p class="text-[9px] font-bold uppercase tracking-widest">Status Tier</p>
+        <p class="font-heading text-lg font-bold">Platinum</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<div class="mb-16 overflow-hidden">
+  <p class="text-center text-navy-50/40 text-xs uppercase tracking-[0.3em] mb-6">Maskapai Partner</p>
+  <div class="ticker-inner select-none">
+    {% for airline in "Garuda Indonesia,Batik Air,Lion Air,Citilink,Sriwijaya Air,Garuda Indonesia,Batik Air,Lion Air,Citilink,Sriwijaya Air".split(",") %}
+    <span class="flex items-center gap-3 text-navy-50/50 text-sm font-medium">
+      <svg class="w-4 h-4 text-gold-400" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 10-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z"/>
+      </svg>
+      {{ airline }}
+    </span>
+    {% endfor %}
+  </div>
+</div>
+
+
+<section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-20">
+  {% for stat in stats_data %}
+  <div class="card-lift bg-navy-300/50 border border-navy-200/30 rounded-2xl p-6 text-center">
+    <p class="stat-num font-heading text-gold-300 text-4xl mb-2">{{ stat.value }}</p>
+    <p class="text-navy-50/60 text-sm">{{ stat.label }}</p>
+  </div>
+  {% empty %}
+  <!-- Fallback static stats -->
+  <div class="card-lift bg-navy-300/50 border border-navy-200/30 rounded-2xl p-6 text-center">
+    <p class="font-heading text-gold-300 text-4xl mb-2">50K+</p>
+    <p class="text-navy-50/60 text-sm">Member Aktif</p>
+  </div>
+  <div class="card-lift bg-navy-300/50 border border-navy-200/30 rounded-2xl p-6 text-center">
+    <p class="font-heading text-gold-300 text-4xl mb-2">5</p>
+    <p class="text-navy-50/60 text-sm">Maskapai Partner</p>
+  </div>
+  <div class="card-lift bg-navy-300/50 border border-navy-200/30 rounded-2xl p-6 text-center">
+    <p class="font-heading text-gold-300 text-4xl mb-2">15</p>
+    <p class="text-navy-50/60 text-sm">Bandara Terhubung</p>
+  </div>
+  <div class="card-lift bg-navy-300/50 border border-navy-200/30 rounded-2xl p-6 text-center">
+    <p class="font-heading text-gold-300 text-4xl mb-2">∞</p>
+    <p class="text-navy-50/60 text-sm">Hadiah Menanti</p>
+  </div>
+  {% endfor %}
+</section>
+
+
+<section class="mb-20 grid-bg rounded-3xl p-10 md:p-16 relative overflow-hidden">
+  <div class="absolute top-0 right-0 w-64 h-64 rounded-full bg-gold-300/5 blur-3xl pointer-events-none"></div>
+
+  <div class="text-center mb-14 relative z-10">
+    <p class="text-gold-300 text-xs uppercase tracking-[0.3em] mb-3">Cara Kerja</p>
+    <h2 class="font-heading text-4xl md:text-5xl">Tiga Langkah Mudah</h2>
+  </div>
+
+  <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-8 md:gap-0">
+
+    <!-- Step 1 -->
+    <div class="flex-1 flex flex-col items-center text-center px-4">
+      <div class="w-16 h-16 rounded-2xl bg-gold-300/10 border border-gold-300/30 flex items-center justify-center mb-6">
+        <svg class="w-8 h-8 text-gold-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+        </svg>
+      </div>
+      <span class="text-gold-400 text-xs font-bold tracking-widest uppercase mb-2">01</span>
+      <h3 class="font-heading text-xl mb-3">Daftar Gratis</h3>
+      <p class="text-navy-50/60 text-sm leading-relaxed">Buat akun member dan dapatkan nomor member unik Anda secara instan.</p>
+    </div>
+
+    <!-- Connector -->
+    <div class="hidden md:block step-connector mx-2"></div>
+
+    <!-- Step 2 -->
+    <div class="flex-1 flex flex-col items-center text-center px-4">
+      <div class="w-16 h-16 rounded-2xl bg-gold-300/10 border border-gold-300/30 flex items-center justify-center mb-6">
+        <svg class="w-8 h-8 text-gold-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 10-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z"/>
+        </svg>
+      </div>
+      <span class="text-gold-400 text-xs font-bold tracking-widest uppercase mb-2">02</span>
+      <h3 class="font-heading text-xl mb-3">Kumpulkan Miles</h3>
+      <p class="text-navy-50/60 text-sm leading-relaxed">Ajukan klaim miles setiap penerbangan dan pantau saldo Anda real-time.</p>
+    </div>
+
+    <!-- Connector -->
+    <div class="hidden md:block step-connector mx-2" style="background: linear-gradient(90deg, transparent, rgba(243,203,81,0.5));"></div>
+
+    <!-- Step 3 -->
+    <div class="flex-1 flex flex-col items-center text-center px-4">
+      <div class="w-16 h-16 rounded-2xl bg-gold-300/10 border border-gold-300/30 flex items-center justify-center mb-6">
+        <svg class="w-8 h-8 text-gold-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/>
+        </svg>
+      </div>
+      <span class="text-gold-400 text-xs font-bold tracking-widest uppercase mb-2">03</span>
+      <h3 class="font-heading text-xl mb-3">Tukarkan Hadiah</h3>
+      <p class="text-navy-50/60 text-sm leading-relaxed">Gunakan miles untuk upgrade kursi, hotel, voucher, dan hadiah eksklusif lainnya.</p>
+    </div>
+
+  </div>
+</section>

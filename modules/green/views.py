@@ -337,7 +337,7 @@ def staf_claim_proses(request, pk):
 
 # FITUR 10 — Transfer Miles
 
-@login_required_member
+#@login_required_member
 def transfer_list(request):
     """R — Riwayat transfer keluar dan masuk milik member."""
     member = get_member(request)
@@ -356,7 +356,7 @@ def transfer_list(request):
         riwayat.append({
             'timestamp': t.timestamp,
             'member_nama': f"{t.email_member_2.email.first_mid_name} {t.email_member_2.email.last_name}",
-            'member_email': t.email_member_2.email_id,
+            'member_email': t.email_member_2_id, # Pastikan ini benar
             'jumlah': t.jumlah,
             'catatan': t.catatan,
             'tipe': 'Kirim',
@@ -381,7 +381,7 @@ def transfer_list(request):
     return render(request, 'transfer/transfer_list.html', context)
 
 
-@login_required_member
+#@login_required_member
 def transfer_create(request):
     """C — Buat transfer miles ke member lain."""
     member = get_member(request)

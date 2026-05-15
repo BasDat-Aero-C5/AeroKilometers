@@ -212,7 +212,8 @@ class Transfer(models.Model):
                          Member,
                          on_delete=models.CASCADE,
                          db_column='email_member_1',
-                         related_name='transfers_keluar'
+                         related_name='transfers_keluar',
+                         primary_key=True
                      )
     email_member_2 = models.ForeignKey(
                          Member,

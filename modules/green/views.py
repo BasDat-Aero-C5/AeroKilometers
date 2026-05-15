@@ -1,27 +1,38 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.db import IntegrityError
 from django.utils import timezone
-from django.views.decorators.http import require_http_methods
 from django.conf import settings
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
 from urllib.parse import urlparse
 
-from modules.green.models import (
-    Member, Staf, Maskapai, Bandara,
-    ClaimMissingMiles, Pengguna, Transfer
-)
+from modules.green.models import ClaimMissingMiles
 
 
-# Database connection helper
+class DBRow(dict):
+    def __getattr__(self, name):
+        if name in self:
+            return self[name]
+        if name == 'pk' and 'id' in self:
+            return self['id']
+        if name == 'email_id' and 'email' in self:
+            return self['email']
+        if name == 'get_nomor_klaim' and 'id' in self:
+            return lambda: f"CLM-{self['id']:03d}"
+        raise AttributeError(f"Attribute {name} not found")
+
+    def __setattr__(self, name, value):
+        self[name] = value
+
+
 def get_db_connection():
-    """Get psycopg2 database connection."""
+    """Return a database connection for local SQLite or production Postgres."""
     if settings.PRODUCTION:
         db_url = os.environ.get('DATABASE_URL')
         parsed = urlparse(db_url)
-        conn = psycopg2.connect(
+        return psycopg2.connect(
             host=parsed.hostname,
             port=parsed.port,
             database=parsed.path[1:],
@@ -29,84 +40,126 @@ def get_db_connection():
             password=parsed.password,
             sslmode='require'
         )
-    else:
-        # For SQLite in development, we'll use Django's connection
-        from django.db import connection
-        return connection
-    return conn
+
+    from django.db import connection
+    return connection
+
+
+def adapt_sql(sql):
+    """Adapt placeholder syntax for SQLite vs PostgreSQL."""
+    if settings.PRODUCTION:
+        return sql
+    return sql.replace('%s', '?')
 
 
 def execute_raw_sql(sql, params=None):
-    """Execute raw SQL query and return results."""
+    """Execute a raw SELECT query and return DBRow list."""
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-        
-        if params:
-            cursor.execute(sql, params)
+        cursor = conn.cursor(cursor_factory=RealDictCursor) if settings.PRODUCTION else conn.cursor()
+        sql = adapt_sql(sql)
+        cursor.execute(sql, params or [])
+        rows = cursor.fetchall()
+
+        if not settings.PRODUCTION:
+            columns = [col[0] for col in cursor.description] if cursor.description else []
+            rows = [DBRow(dict(zip(columns, row))) for row in rows]
         else:
-            cursor.execute(sql)
-        
-        results = cursor.fetchall()
+            rows = [DBRow(row) for row in rows]
+
         cursor.close()
-        if hasattr(conn, 'commit'):
-            conn.commit()
-        conn.close()
-        
-        return [dict(row) for row in results] if results else []
+        if settings.PRODUCTION:
+            conn.close()
+        return rows
     except Exception as e:
         print(f"Database error: {e}")
         return []
 
 
 def execute_raw_sql_update(sql, params=None):
-    """Execute raw SQL update/insert/delete query."""
+    """Execute a raw INSERT/UPDATE/DELETE query and return affected rowcount."""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
-        if params:
-            cursor.execute(sql, params)
-        else:
-            cursor.execute(sql)
-        
+        sql = adapt_sql(sql)
+        cursor.execute(sql, params or [])
         rowcount = cursor.rowcount
-        cursor.close()
         conn.commit()
-        conn.close()
-        
+        cursor.close()
+        if settings.PRODUCTION:
+            conn.close()
         return rowcount
     except Exception as e:
         print(f"Database error: {e}")
-        return 0
+        raise
 
 
-# Helper
+def execute_raw_sql_many(commands):
+    """Execute multiple SQL statements inside the same transaction."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        for sql, params in commands:
+            cursor.execute(adapt_sql(sql), params or [])
+        conn.commit()
+        rowcount = cursor.rowcount
+        cursor.close()
+        if settings.PRODUCTION:
+            conn.close()
+        return rowcount
+    except Exception as e:
+        conn.rollback()
+        cursor.close()
+        if settings.PRODUCTION:
+            conn.close()
+        print(f"Database transaction error: {e}")
+        raise
+
 
 def get_member(request):
-    """Return Member object for the logged-in user, or None."""
+    """Return Member data for the logged-in user, or None."""
     email = request.session.get('email')
     if not email:
         return None
-    try:
-        return Member.objects.select_related('email', 'id_tier').get(email=email)
-    except Member.DoesNotExist:
-        return None
+
+    sql = """
+        SELECT m.email, m.nomor_member, m.tanggal_bergabung, m.id_tier,
+               m.award_miles, m.total_miles,
+               p.first_mid_name, p.last_name,
+               p.country_code, p.mobile_number,
+               p.tanggal_lahir, p.kewarganegaraan,
+               p.salutation,
+               m.email as email_id
+        FROM MEMBER m
+        JOIN PENGGUNA p ON m.email = p.email
+        WHERE m.email = %s
+    """
+    result = execute_raw_sql(sql, [email])
+    return result[0] if result else None
 
 
 def get_staf(request):
-    """Return Staf object for the logged-in user, or None."""
+    """Return Staf data for the logged-in user, or None."""
     email = request.session.get('email')
     if not email:
         return None
-    try:
-        return Staf.objects.select_related('email', 'kode_maskapai').get(email=email)
-    except Staf.DoesNotExist:
-        return None
+
+    sql = """
+        SELECT s.email, s.id_staf, s.kode_maskapai,
+               p.first_mid_name, p.last_name,
+               p.country_code, p.mobile_number,
+               p.tanggal_lahir, p.kewarganegaraan,
+               p.salutation,
+               s.email as email_id
+        FROM STAF s
+        JOIN PENGGUNA p ON s.email = p.email
+        WHERE s.email = %s
+    """
+    result = execute_raw_sql(sql, [email])
+    return result[0] if result else None
 
 
 def login_required_member(view_func):
-    """Decorator: redirect to login if not a Member."""
     def wrapper(request, *args, **kwargs):
         if not get_member(request):
             messages.error(request, 'Silakan login sebagai Member terlebih dahulu.')
@@ -116,7 +169,6 @@ def login_required_member(view_func):
 
 
 def login_required_staf(view_func):
-    """Decorator: redirect to login if not Staf."""
     def wrapper(request, *args, **kwargs):
         if not get_staf(request):
             messages.error(request, 'Silakan login sebagai Staf terlebih dahulu.')
@@ -125,49 +177,128 @@ def login_required_staf(view_func):
     return wrapper
 
 
-#  FITUR 8 - Claim Missing Miles (MEMBER)
+def get_maskapai_list():
+    sql = "SELECT kode_maskapai, nama_maskapai FROM MASKAPAI ORDER BY nama_maskapai"
+    return execute_raw_sql(sql)
 
-#@login_required_member
+
+def get_bandara_list():
+    sql = "SELECT iata_code, nama, kota, negara FROM BANDARA ORDER BY iata_code"
+    return execute_raw_sql(sql)
+
+
+def get_maskapai_by_pk(kode_maskapai):
+    sql = "SELECT kode_maskapai, nama_maskapai FROM MASKAPAI WHERE kode_maskapai = %s"
+    rows = execute_raw_sql(sql, [kode_maskapai])
+    return rows[0] if rows else None
+
+
+def get_bandara_by_pk(iata_code):
+    sql = "SELECT iata_code, nama, kota, negara FROM BANDARA WHERE iata_code = %s"
+    rows = execute_raw_sql(sql, [iata_code])
+    return rows[0] if rows else None
+
+
+def get_member_by_email(email):
+    sql = "SELECT email, nomor_member, award_miles, total_miles, email as email_id FROM MEMBER WHERE email = %s"
+    rows = execute_raw_sql(sql, [email])
+    return rows[0] if rows else None
+
+
+def get_claim_by_pk_and_member(pk, member_email):
+    sql = """
+        SELECT c.*, c.id as id
+        FROM CLAIM_MISSING_MILES c
+        WHERE c.id = %s AND c.email_member = %s
+    """
+    rows = execute_raw_sql(sql, [pk, member_email])
+    return rows[0] if rows else None
+
+
+def get_claim_by_pk(pk):
+    sql = "SELECT c.*, c.id as id FROM CLAIM_MISSING_MILES c WHERE c.id = %s"
+    rows = execute_raw_sql(sql, [pk])
+    return rows[0] if rows else None
+
+
+def build_claim_item(row):
+    if not row:
+        return None
+
+    claim = DBRow(row)
+    claim['maskapai'] = DBRow({
+        'kode_maskapai': row['maskapai'],
+        'nama_maskapai': row.get('maskapai_nama') or ''
+    })
+    claim['bandara_asal'] = DBRow({
+        'iata_code': row['bandara_asal'],
+        'nama': row.get('bandara_asal_nama') or '',
+        'kota': row.get('bandara_asal_kota') or '',
+        'negara': row.get('bandara_asal_negara') or '',
+    })
+    claim['bandara_tujuan'] = DBRow({
+        'iata_code': row['bandara_tujuan'],
+        'nama': row.get('bandara_tujuan_nama') or '',
+        'kota': row.get('bandara_tujuan_kota') or '',
+        'negara': row.get('bandara_tujuan_negara') or '',
+    })
+    return claim
+
+
+@login_required_member
 def claim_list(request):
-    """R — Riwayat klaim milik member, dengan filter status."""
     member = get_member(request)
     status_filter = request.GET.get('status', 'Semua')
 
-    claims = ClaimMissingMiles.objects.filter(
-        email_member=member
-    ).select_related('maskapai', 'bandara_asal', 'bandara_tujuan').order_by('-timestamp')
+    sql = """
+        SELECT c.id, c.email_member, c.maskapai, c.bandara_asal, c.bandara_tujuan,
+               c.tanggal_penerbangan, c.flight_number, c.nomor_tiket,
+               c.kelas_kabin, c.pnr, c.status_penerimaan, c.timestamp,
+               m.nama_maskapai as maskapai_nama,
+               ba.nama as bandara_asal_nama, ba.kota as bandara_asal_kota, ba.negara as bandara_asal_negara,
+               bt.nama as bandara_tujuan_nama, bt.kota as bandara_tujuan_kota, bt.negara as bandara_tujuan_negara
+        FROM CLAIM_MISSING_MILES c
+        JOIN MASKAPAI m ON c.maskapai = m.kode_maskapai
+        JOIN BANDARA ba ON c.bandara_asal = ba.iata_code
+        JOIN BANDARA bt ON c.bandara_tujuan = bt.iata_code
+        WHERE c.email_member = %s
+    """
+    params = [member.email_id]
 
     if status_filter in ['Menunggu', 'Disetujui', 'Ditolak']:
-        claims = claims.filter(status_penerimaan=status_filter)
+        sql += ' AND c.status_penerimaan = %s'
+        params.append(status_filter)
+
+    sql += ' ORDER BY c.timestamp DESC'
+    rows = execute_raw_sql(sql, params)
+    claims = [build_claim_item(row) for row in rows]
 
     context = {
-        'member':        member,
-        'claims':        claims,
+        'member': member,
+        'claims': claims,
         'status_filter': status_filter,
         'status_choices': ['Semua', 'Menunggu', 'Disetujui', 'Ditolak'],
     }
     return render(request, 'claim/claim_list.html', context)
 
 
-#@login_required_member
+@login_required_member
 def claim_create(request):
-    """C — Ajukan klaim baru."""
-    member    = get_member(request)
-    maskapais = Maskapai.objects.all().order_by('nama_maskapai')
-    bandaras  = Bandara.objects.all().order_by('iata_code')
+    member = get_member(request)
+    maskapais = get_maskapai_list()
+    bandaras = get_bandara_list()
     kelas_choices = ClaimMissingMiles.KELAS_CHOICES
 
     if request.method == 'POST':
-        maskapai_kode       = request.POST.get('maskapai')
-        bandara_asal_kode   = request.POST.get('bandara_asal')
+        maskapai_kode = request.POST.get('maskapai')
+        bandara_asal_kode = request.POST.get('bandara_asal')
         bandara_tujuan_kode = request.POST.get('bandara_tujuan')
         tanggal_penerbangan = request.POST.get('tanggal_penerbangan')
-        flight_number       = request.POST.get('flight_number', '').strip().upper()
-        nomor_tiket         = request.POST.get('nomor_tiket', '').strip()
-        kelas_kabin         = request.POST.get('kelas_kabin')
-        pnr                 = request.POST.get('pnr', '').strip().upper()
+        flight_number = request.POST.get('flight_number', '').strip().upper()
+        nomor_tiket = request.POST.get('nomor_tiket', '').strip()
+        kelas_kabin = request.POST.get('kelas_kabin')
+        pnr = request.POST.get('pnr', '').strip().upper()
 
-        # Basic validation
         if not all([maskapai_kode, bandara_asal_kode, bandara_tujuan_kode,
                     tanggal_penerbangan, flight_number, nomor_tiket, kelas_kabin, pnr]):
             messages.error(request, 'Semua field wajib diisi.')
@@ -183,33 +314,39 @@ def claim_create(request):
                 'bandaras': bandaras, 'kelas_choices': kelas_choices,
             })
 
-        try:
-            maskapai       = Maskapai.objects.get(pk=maskapai_kode)
-            bandara_asal   = Bandara.objects.get(pk=bandara_asal_kode)
-            bandara_tujuan = Bandara.objects.get(pk=bandara_tujuan_kode)
-
-            ClaimMissingMiles.objects.create(
-                email_member=member,
-                maskapai=maskapai,
-                bandara_asal=bandara_asal,
-                bandara_tujuan=bandara_tujuan,
-                tanggal_penerbangan=tanggal_penerbangan,
-                flight_number=flight_number,
-                nomor_tiket=nomor_tiket,
-                kelas_kabin=kelas_kabin,
-                pnr=pnr,
-                status_penerimaan='Menunggu',
-                timestamp=timezone.now(),
-            )
-            messages.success(request, 'Klaim berhasil diajukan dan sedang menunggu verifikasi.')
-            return redirect('main:claim_list')
-
-        except Maskapai.DoesNotExist:
+        if not get_maskapai_by_pk(maskapai_kode):
             messages.error(request, 'Maskapai tidak valid.')
-        except Bandara.DoesNotExist:
+        elif not get_bandara_by_pk(bandara_asal_kode) or not get_bandara_by_pk(bandara_tujuan_kode):
             messages.error(request, 'Bandara tidak valid.')
-        except IntegrityError:
-            messages.error(request, 'Klaim duplikat: kombinasi flight number, tanggal, dan nomor tiket sudah pernah diajukan.')
+        else:
+            try:
+                sql = """
+                    INSERT INTO CLAIM_MISSING_MILES
+                        (email_member, maskapai, bandara_asal, bandara_tujuan,
+                         tanggal_penerbangan, flight_number, nomor_tiket,
+                         kelas_kabin, pnr, status_penerimaan, timestamp)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """
+                execute_raw_sql_update(sql, [
+                    member.email_id,
+                    maskapai_kode,
+                    bandara_asal_kode,
+                    bandara_tujuan_kode,
+                    tanggal_penerbangan,
+                    flight_number,
+                    nomor_tiket,
+                    kelas_kabin,
+                    pnr,
+                    'Menunggu',
+                    timezone.now(),
+                ])
+                messages.success(request, 'Klaim berhasil diajukan dan sedang menunggu verifikasi.')
+                return redirect('green:claim_list')
+            except Exception as e:
+                if 'unique' in str(e).lower():
+                    messages.error(request, 'Klaim duplikat: kombinasi flight number, tanggal, dan nomor tiket sudah pernah diajukan.')
+                else:
+                    messages.error(request, 'Terjadi kesalahan database saat mengajukan klaim.')
 
         return render(request, 'claim/claim_form.html', {
             'member': member, 'maskapais': maskapais,
@@ -224,29 +361,33 @@ def claim_create(request):
     })
 
 
-#@login_required_member
+@login_required_member
 def claim_edit(request, pk):
-    """U — Edit klaim, hanya jika status Menunggu."""
     member = get_member(request)
-    claim  = get_object_or_404(ClaimMissingMiles, pk=pk, email_member=member)
+    claim = get_claim_by_pk_and_member(pk, member.email_id)
+
+    if not claim:
+        messages.error(request, 'Klaim tidak ditemukan.')
+        return redirect('green:claim_list')
 
     if claim.status_penerimaan != 'Menunggu':
         messages.error(request, 'Klaim yang sudah diproses tidak dapat diubah.')
-        return redirect('main:claim_list')
+        return redirect('green:claim_list')
 
-    maskapais     = Maskapai.objects.all().order_by('nama_maskapai')
-    bandaras      = Bandara.objects.all().order_by('iata_code')
+    maskapais = get_maskapai_list()
+    bandaras = get_bandara_list()
     kelas_choices = ClaimMissingMiles.KELAS_CHOICES
+    claim = build_claim_item(claim)
 
     if request.method == 'POST':
-        maskapai_kode       = request.POST.get('maskapai')
-        bandara_asal_kode   = request.POST.get('bandara_asal')
+        maskapai_kode = request.POST.get('maskapai')
+        bandara_asal_kode = request.POST.get('bandara_asal')
         bandara_tujuan_kode = request.POST.get('bandara_tujuan')
         tanggal_penerbangan = request.POST.get('tanggal_penerbangan')
-        flight_number       = request.POST.get('flight_number', '').strip().upper()
-        nomor_tiket         = request.POST.get('nomor_tiket', '').strip()
-        kelas_kabin         = request.POST.get('kelas_kabin')
-        pnr                 = request.POST.get('pnr', '').strip().upper()
+        flight_number = request.POST.get('flight_number', '').strip().upper()
+        nomor_tiket = request.POST.get('nomor_tiket', '').strip()
+        kelas_kabin = request.POST.get('kelas_kabin')
+        pnr = request.POST.get('pnr', '').strip().upper()
 
         if not all([maskapai_kode, bandara_asal_kode, bandara_tujuan_kode,
                     tanggal_penerbangan, flight_number, nomor_tiket, kelas_kabin, pnr]):
@@ -266,21 +407,36 @@ def claim_edit(request, pk):
             })
 
         try:
-            claim.maskapai           = Maskapai.objects.get(pk=maskapai_kode)
-            claim.bandara_asal       = Bandara.objects.get(pk=bandara_asal_kode)
-            claim.bandara_tujuan     = Bandara.objects.get(pk=bandara_tujuan_kode)
-            claim.tanggal_penerbangan = tanggal_penerbangan
-            claim.flight_number      = flight_number
-            claim.nomor_tiket        = nomor_tiket
-            claim.kelas_kabin        = kelas_kabin
-            claim.pnr                = pnr
-            claim.save()
-
+            sql = """
+                UPDATE CLAIM_MISSING_MILES
+                SET maskapai = %s,
+                    bandara_asal = %s,
+                    bandara_tujuan = %s,
+                    tanggal_penerbangan = %s,
+                    flight_number = %s,
+                    nomor_tiket = %s,
+                    kelas_kabin = %s,
+                    pnr = %s
+                WHERE id = %s
+            """
+            execute_raw_sql_update(sql, [
+                maskapai_kode,
+                bandara_asal_kode,
+                bandara_tujuan_kode,
+                tanggal_penerbangan,
+                flight_number,
+                nomor_tiket,
+                kelas_kabin,
+                pnr,
+                claim.id,
+            ])
             messages.success(request, 'Klaim berhasil diperbarui.')
-            return redirect('main:claim_list')
-
-        except IntegrityError:
-            messages.error(request, 'Klaim duplikat: kombinasi flight number, tanggal, dan nomor tiket sudah pernah diajukan.')
+            return redirect('green:claim_list')
+        except Exception as e:
+            if 'unique' in str(e).lower():
+                messages.error(request, 'Klaim duplikat: kombinasi flight number, tanggal, dan nomor tiket sudah pernah diajukan.')
+            else:
+                messages.error(request, 'Terjadi kesalahan database saat memperbarui klaim.')
             return render(request, 'claim/claim_form.html', {
                 'member': member, 'claim': claim,
                 'maskapais': maskapais, 'bandaras': bandaras,
@@ -288,192 +444,223 @@ def claim_edit(request, pk):
             })
 
     return render(request, 'claim/claim_form.html', {
-        'member':       member,
-        'claim':        claim,
-        'maskapais':    maskapais,
-        'bandaras':     bandaras,
+        'member': member,
+        'claim': claim,
+        'maskapais': maskapais,
+        'bandaras': bandaras,
         'kelas_choices': kelas_choices,
-        'is_edit':      True,
+        'is_edit': True,
     })
 
 
-#@login_required_member
+@login_required_member
 def claim_delete(request, pk):
-    """D — Batalkan klaim, hanya jika status Menunggu."""
     member = get_member(request)
-    claim  = get_object_or_404(ClaimMissingMiles, pk=pk, email_member=member)
+    claim = get_claim_by_pk_and_member(pk, member.email_id)
+
+    if not claim:
+        messages.error(request, 'Klaim tidak ditemukan.')
+        return redirect('green:claim_list')
 
     if claim.status_penerimaan != 'Menunggu':
         messages.error(request, 'Klaim yang sudah diproses tidak dapat dibatalkan.')
-        return redirect('main:claim_list')
+        return redirect('green:claim_list')
 
     if request.method == 'POST':
-        claim.delete()
+        sql = 'DELETE FROM CLAIM_MISSING_MILES WHERE id = %s'
+        execute_raw_sql_update(sql, [pk])
         messages.success(request, 'Klaim berhasil dibatalkan.')
-        return redirect('main:claim_list')
+        return redirect('green:claim_list')
 
-    # GET — show confirmation page
     return render(request, 'claim/claim_confirm_delete.html', {
         'member': member,
-        'claim':  claim,
+        'claim': build_claim_item(claim),
     })
 
 
-#  FITUR 9 - Claim Missing Miles(STAF)
-
-#@login_required_staf
+@login_required_staf
 def staf_claim_list(request):
-    """R — Daftar semua klaim dari semua member, dengan filter."""
     staf = get_staf(request)
-
-    status_filter   = request.GET.get('status', 'Semua')
+    status_filter = request.GET.get('status', 'Semua')
     maskapai_filter = request.GET.get('maskapai', '')
-    tgl_dari        = request.GET.get('tgl_dari', '')
-    tgl_sampai      = request.GET.get('tgl_sampai', '')
+    tgl_dari = request.GET.get('tgl_dari', '')
+    tgl_sampai = request.GET.get('tgl_sampai', '')
 
-    claims = ClaimMissingMiles.objects.select_related(
-        'email_member', 'email_member__email',
-        'maskapai', 'bandara_asal', 'bandara_tujuan', 'email_staf'
-    ).order_by('-timestamp')
+    sql = """
+        SELECT c.id, c.email_member, c.maskapai, c.bandara_asal, c.bandara_tujuan,
+               c.tanggal_penerbangan, c.flight_number, c.nomor_tiket,
+               c.kelas_kabin, c.pnr, c.status_penerimaan, c.timestamp,
+               m.nama_maskapai as maskapai_nama,
+               ba.iata_code as bandara_asal_iata, ba.nama as bandara_asal_nama,
+               ba.kota as bandara_asal_kota, ba.negara as bandara_asal_negara,
+               bt.iata_code as bandara_tujuan_iata, bt.nama as bandara_tujuan_nama,
+               bt.kota as bandara_tujuan_kota, bt.negara as bandara_tujuan_negara,
+               pm.first_mid_name as member_first_name, pm.last_name as member_last_name
+        FROM CLAIM_MISSING_MILES c
+        JOIN MASKAPAI m ON c.maskapai = m.kode_maskapai
+        JOIN BANDARA ba ON c.bandara_asal = ba.iata_code
+        JOIN BANDARA bt ON c.bandara_tujuan = bt.iata_code
+        JOIN MEMBER mb ON c.email_member = mb.email
+        JOIN PENGGUNA pm ON mb.email = pm.email
+        WHERE 1=1
+    """
+    params = []
 
     if status_filter in ['Menunggu', 'Disetujui', 'Ditolak']:
-        claims = claims.filter(status_penerimaan=status_filter)
+        sql += ' AND c.status_penerimaan = %s'
+        params.append(status_filter)
 
     if maskapai_filter:
-        claims = claims.filter(maskapai=maskapai_filter)
+        sql += ' AND c.maskapai = %s'
+        params.append(maskapai_filter)
 
     if tgl_dari:
-        claims = claims.filter(timestamp__date__gte=tgl_dari)
+        sql += ' AND DATE(c.timestamp) >= %s'
+        params.append(tgl_dari)
 
     if tgl_sampai:
-        claims = claims.filter(timestamp__date__lte=tgl_sampai)
+        sql += ' AND DATE(c.timestamp) <= %s'
+        params.append(tgl_sampai)
 
-    maskapais = Maskapai.objects.all().order_by('nama_maskapai')
+    sql += ' ORDER BY c.timestamp DESC'
+    rows = execute_raw_sql(sql, params)
+    claims = [build_claim_item(row) for row in rows]
+
+    maskapais = get_maskapai_list()
 
     context = {
-        'staf':           staf,
-        'claims':         claims,
-        'maskapais':      maskapais,
-        'status_filter':  status_filter,
+        'staf': staf,
+        'claims': claims,
+        'maskapais': maskapais,
+        'status_filter': status_filter,
         'maskapai_filter': maskapai_filter,
-        'tgl_dari':       tgl_dari,
-        'tgl_sampai':     tgl_sampai,
+        'tgl_dari': tgl_dari,
+        'tgl_sampai': tgl_sampai,
         'status_choices': ['Semua', 'Menunggu', 'Disetujui', 'Ditolak'],
     }
     return render(request, 'claim/staf_claim_list.html', context)
 
 
-#@login_required_staf
+@login_required_staf
 def staf_claim_proses(request, pk):
-    """U — Ubah status klaim menjadi Disetujui atau Ditolak."""
-    staf  = get_staf(request)
-    claim = get_object_or_404(ClaimMissingMiles, pk=pk)
+    staf = get_staf(request)
+    claim = get_claim_by_pk(pk)
+
+    if not claim:
+        messages.error(request, 'Klaim tidak ditemukan.')
+        return redirect('green:staf_claim_list')
 
     if claim.status_penerimaan != 'Menunggu':
         messages.error(request, 'Klaim ini sudah diproses sebelumnya.')
-        return redirect('main:staf_claim_list')
+        return redirect('green:staf_claim_list')
+
+    claim = build_claim_item(claim)
 
     if request.method == 'POST':
         action = request.POST.get('action')
 
         if action not in ['Disetujui', 'Ditolak']:
             messages.error(request, 'Aksi tidak valid.')
-            return redirect('main:staf_claim_list')
+            return redirect('green:staf_claim_list')
 
-        claim.status_penerimaan = action
-        claim.email_staf        = staf
-        claim.save()
+        try:
+            member = get_member_by_email(claim.email_member)
+            if not member:
+                messages.error(request, 'Member tidak ditemukan.')
+                return redirect('green:staf_claim_list')
 
-        if action == 'Disetujui':
-            # Add miles to member (placeholder values per kelas kabin)
-            miles = ClaimMissingMiles.MILES_PER_KELAS.get(claim.kelas_kabin, 500)
-            member = claim.email_member
-            member.award_miles += miles
-            member.total_miles += miles
-            member.save()
-            messages.success(
-                request,
-                f'Klaim disetujui. {miles} miles ditambahkan ke akun {member.email_id}.'
-            )
-        else:
-            messages.success(request, 'Klaim telah ditolak.')
+            commands = [
+                ('UPDATE CLAIM_MISSING_MILES SET status_penerimaan = %s, email_staf = %s WHERE id = %s',
+                 [action, staf.email_id, claim.id]),
+            ]
 
-        return redirect('main:staf_claim_list')
+            if action == 'Disetujui':
+                miles = ClaimMissingMiles.MILES_PER_KELAS.get(claim.kelas_kabin, 500)
+                commands.extend([
+                    ('UPDATE MEMBER SET award_miles = award_miles + %s WHERE email = %s', [miles, member.email]),
+                    ('UPDATE MEMBER SET total_miles = total_miles + %s WHERE email = %s', [miles, member.email]),
+                ])
 
-    # GET — show confirmation modal page
+            execute_raw_sql_many(commands)
+
+            if action == 'Disetujui':
+                messages.success(request, f'Klaim disetujui. {miles} miles ditambahkan ke akun {member.email_id}.')
+            else:
+                messages.success(request, 'Klaim telah ditolak.')
+            return redirect('green:staf_claim_list')
+        except Exception as e:
+            messages.error(request, 'Terjadi kesalahan saat memproses klaim.')
+            print(e)
+            return redirect('green:staf_claim_list')
+
     return render(request, 'claim/staf_claim_proses.html', {
-        'staf':  staf,
+        'staf': staf,
         'claim': claim,
     })
 
 
-# FITUR 10 — Transfer Miles
-
-#@login_required_member
+@login_required_member
 def transfer_list(request):
-    """R — Riwayat transfer keluar dan masuk milik member."""
     member = get_member(request)
+    if not member:
+        messages.error(request, 'Silakan login sebagai Member terlebih dahulu.')
+        return redirect('main:login')
 
-    transfers_keluar = Transfer.objects.filter(
-        email_member_1=member
-    ).select_related('email_member_2', 'email_member_2__email').order_by('-timestamp')
+    sql_out = """
+        SELECT t.timestamp, t.jumlah, t.catatan,
+               'Kirim' AS tipe,
+               p.first_mid_name || ' ' || p.last_name AS member_nama,
+               m.email AS member_email
+        FROM TRANSFER t
+        JOIN MEMBER m ON t.email_member_2 = m.email
+        JOIN PENGGUNA p ON m.email = p.email
+        WHERE t.email_member_1 = %s
+    """
+    sql_in = """
+        SELECT t.timestamp, t.jumlah, t.catatan,
+               'Terima' AS tipe,
+               p.first_mid_name || ' ' || p.last_name AS member_nama,
+               m.email AS member_email
+        FROM TRANSFER t
+        JOIN MEMBER m ON t.email_member_1 = m.email
+        JOIN PENGGUNA p ON m.email = p.email
+        WHERE t.email_member_2 = %s
+    """
 
-    transfers_masuk = Transfer.objects.filter(
-        email_member_2=member
-    ).select_related('email_member_1', 'email_member_1__email').order_by('-timestamp')
+    if not settings.PRODUCTION:
+        sql_out = sql_out.replace("|| ' ' ||", "|| ' ' ||")
+        sql_in = sql_in.replace("|| ' ' ||", "|| ' ' ||")
 
-    # Gabungkan dan tandai tipe
-    riwayat = []
-    for t in transfers_keluar:
-        riwayat.append({
-            'timestamp': t.timestamp,
-            'member_nama': f"{t.email_member_2.email.first_mid_name} {t.email_member_2.email.last_name}",
-            'member_email': t.email_member_2_id, # Pastikan ini benar
-            'jumlah': t.jumlah,
-            'catatan': t.catatan,
-            'tipe': 'Kirim',
-        })
-    for t in transfers_masuk:
-        riwayat.append({
-            'timestamp': t.timestamp,
-            'member_nama': f"{t.email_member_1.email.first_mid_name} {t.email_member_1.email.last_name}",
-            'member_email': t.email_member_1.email_id,
-            'jumlah': t.jumlah,
-            'catatan': t.catatan,
-            'tipe': 'Terima',
-        })
+    outgoing = execute_raw_sql(sql_out, [member.email_id])
+    incoming = execute_raw_sql(sql_in, [member.email_id])
+    riwayat = sorted(outgoing + incoming, key=lambda x: x.timestamp, reverse=True)
 
-    # Sort by timestamp descending
-    riwayat.sort(key=lambda x: x['timestamp'], reverse=True)
-
-    context = {
-        'member':  member,
+    return render(request, 'transfer/transfer_list.html', {
+        'member': member,
         'riwayat': riwayat,
-    }
-    return render(request, 'transfer/transfer_list.html', context)
+    })
 
 
-#@login_required_member
+@login_required_member
 def transfer_create(request):
-    """C — Buat transfer miles ke member lain."""
     member = get_member(request)
+    if not member:
+        messages.error(request, 'Silakan login sebagai Member terlebih dahulu.')
+        return redirect('main:login')
 
     if request.method == 'POST':
         email_penerima = request.POST.get('email_penerima', '').strip()
-        jumlah_str     = request.POST.get('jumlah', '').strip()
-        catatan        = request.POST.get('catatan', '').strip()
+        jumlah_str = request.POST.get('jumlah', '').strip()
+        catatan = request.POST.get('catatan', '').strip()
 
-        # Validasi email penerima tidak kosong
         if not email_penerima or not jumlah_str:
             messages.error(request, 'Email penerima dan jumlah miles wajib diisi.')
             return render(request, 'transfer/transfer_form.html', {'member': member})
 
-        # Validasi tidak transfer ke diri sendiri
         if email_penerima == member.email_id:
             messages.error(request, 'Anda tidak dapat mentransfer miles ke diri sendiri.')
             return render(request, 'transfer/transfer_form.html', {'member': member})
 
-        # Validasi jumlah adalah angka positif
         try:
             jumlah = int(jumlah_str)
             if jumlah <= 0:
@@ -482,36 +669,28 @@ def transfer_create(request):
             messages.error(request, 'Jumlah miles harus berupa angka positif.')
             return render(request, 'transfer/transfer_form.html', {'member': member})
 
-        # Validasi penerima adalah Member aktif
-        try:
-            penerima = Member.objects.select_related('email').get(email=email_penerima)
-        except Member.DoesNotExist:
+        penerima = get_member_by_email(email_penerima)
+        if not penerima:
             messages.error(request, 'Email penerima tidak terdaftar sebagai Member aktif.')
             return render(request, 'transfer/transfer_form.html', {'member': member})
 
-        # Validasi award miles mencukupi
         if member.award_miles < jumlah:
             messages.error(request, f'Award miles Anda tidak mencukupi. Tersedia: {member.award_miles} miles.')
             return render(request, 'transfer/transfer_form.html', {'member': member})
 
-        # Buat transfer
-        Transfer.objects.create(
-            email_member_1=member,
-            email_member_2=penerima,
-            timestamp=timezone.now(),
-            jumlah=jumlah,
-            catatan=catatan if catatan else None,
-        )
-
-        # Kurangi award miles pengirim
-        member.award_miles -= jumlah
-        member.save()
-
-        # Tambah award miles penerima
-        penerima.award_miles += jumlah
-        penerima.save()
-
-        messages.success(request, f'{jumlah} miles berhasil ditransfer ke {email_penerima}.')
-        return redirect('green:transfer_list')
+        try:
+            commands = [
+                ('INSERT INTO TRANSFER (email_member_1, email_member_2, timestamp, jumlah, catatan) VALUES (%s, %s, %s, %s, %s)',
+                 [member.email_id, email_penerima, timezone.now(), jumlah, catatan or None]),
+                ('UPDATE MEMBER SET award_miles = award_miles - %s WHERE email = %s', [jumlah, member.email_id]),
+                ('UPDATE MEMBER SET award_miles = award_miles + %s WHERE email = %s', [jumlah, email_penerima]),
+            ]
+            execute_raw_sql_many(commands)
+            messages.success(request, f'{jumlah} miles berhasil ditransfer ke {email_penerima}.')
+            return redirect('green:transfer_list')
+        except Exception as e:
+            messages.error(request, 'Terjadi kesalahan saat melakukan transfer miles.')
+            print(e)
+            return render(request, 'transfer/transfer_form.html', {'member': member})
 
     return render(request, 'transfer/transfer_form.html', {'member': member})

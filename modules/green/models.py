@@ -2,7 +2,7 @@ from django.db import models
 from django.utils import timezone
 
 
-class Pengguna(models.Model):
+class Pengguna(models.Model): #1
     SALUTATION_CHOICES = [
         ('Mr.', 'Mr.'),
         ('Mrs.', 'Mrs.'),
@@ -27,7 +27,7 @@ class Pengguna(models.Model):
         return self.email
 
 
-class Tier(models.Model):
+class Tier(models.Model): #2
     id_tier                  = models.CharField(max_length=10, primary_key=True)
     nama                     = models.CharField(max_length=50)
     minimal_frekuensi_terbang = models.IntegerField()
@@ -41,7 +41,7 @@ class Tier(models.Model):
         return self.nama
 
 
-class Member(models.Model):
+class Member(models.Model): #3
     email             = models.OneToOneField(
                             Pengguna,
                             on_delete=models.CASCADE,
@@ -66,7 +66,7 @@ class Member(models.Model):
         return f"{self.nomor_member} - {self.email_id}"
 
 
-class Penyedia(models.Model):
+class Penyedia(models.Model): #4, (Provider)
     id = models.AutoField(primary_key=True)
 
     class Meta:
@@ -77,7 +77,7 @@ class Penyedia(models.Model):
         return f"Penyedia {self.id}"
 
 
-class Maskapai(models.Model):
+class Maskapai(models.Model): #5, (Airline)
     kode_maskapai  = models.CharField(max_length=10, primary_key=True)
     nama_maskapai  = models.CharField(max_length=100)
     id_penyedia    = models.ForeignKey(
@@ -94,7 +94,7 @@ class Maskapai(models.Model):
         return f"{self.kode_maskapai} - {self.nama_maskapai}"
 
 
-class Staf(models.Model):
+class Staf(models.Model): #6, (Staff)
     email         = models.OneToOneField(
                         Pengguna,
                         on_delete=models.CASCADE,
@@ -115,8 +115,78 @@ class Staf(models.Model):
     def __str__(self):
         return f"{self.id_staf} - {self.email_id}"
 
+class Mitra(models.Model): #7, (Partner)
+    email_mitra = models.CharField(max_length=100, primary_key=True)
+    id_penyedia = models.ForeignKey(
+                        Penyedia,
+                        on_delete=models.PROTECT,
+                        db_column='id_penyedia'
+                    )
+    nama_mitra   = models.CharField(max_length=100)
+    tanggal_kerja_sama = models.DateField() #Not Null
 
-class Bandara(models.Model):
+    class Meta:
+        managed = False
+        db_table = 'MITRA'
+
+    def __str__(self):
+        return f"{self.id_mitra} - {self.nama}"
+    
+class Identitas(models.Model): #8, (Identity)
+    nomor = models.CharField(max_length=50, primary_key=True)
+    email_member = models.ForeignKey(
+                        Member,
+                        on_delete=models.CASCADE,
+                        db_column='email_member',
+                        related_name='identitas'
+                    )
+    tanggal_habis = models.DateField() #Not Null
+    tanggal_terbit = models.DateField() #Not Null
+    negara_penerbit = models.CharField(max_length=50) #Not Null
+    jenis = models.CharField(max_length=30)
+
+    class Meta:
+        managed = False
+        db_table = 'IDENTITAS'
+
+    def __str__(self):
+        return f"{self.nomor} - {self.email_member_id}"
+
+class AwardMilesPackage(models.Model): #9, (Miles Package)
+    id_package   = models.CharField(max_length=20, primary_key=True) #Auto increment with format AMP-XXX
+    jumlah_miles = models.IntegerField()
+    harga        = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        managed = False
+        db_table = 'AWARD_MILES_PACKAGE'
+
+    def __str__(self):
+        return f"{self.id_package} - {self.nama} | {self.jumlah_miles} miles for ${self.harga}"
+
+class MemberAwardMilesPackage(models.Model): #10, (Member's Purchased Miles Package)
+    email_member = models.ForeignKey(
+                        Member,
+                        on_delete=models.CASCADE,
+                        db_column='email_member',
+                        related_name='miles_packages'
+                    )
+    id_package   = models.ForeignKey(
+                        AwardMilesPackage,
+                        on_delete=models.PROTECT,
+                        db_column='id_package'
+                    ) # Not Null
+    timestamp    = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        managed = False
+        db_table = 'MEMBER_AWARD_MILES_PACKAGE'
+        unique_together = [['email_member', 'id_package', 'timestamp']]
+
+    def __str__(self):
+        return f"{self.email_member_id} bought {self.id_package_id} at {self.timestamp}"
+
+class Bandara(models.Model): #10, (Airport)
     iata_code = models.CharField(max_length=3, primary_key=True)
     nama      = models.CharField(max_length=100)
     kota      = models.CharField(max_length=100)
@@ -129,7 +199,6 @@ class Bandara(models.Model):
     def __str__(self):
         return f"{self.iata_code} - {self.nama}"
 
-
 class ClaimMissingMiles(models.Model):
     STATUS_CHOICES = [
         ('Menunggu',  'Menunggu'),
@@ -139,14 +208,12 @@ class ClaimMissingMiles(models.Model):
     KELAS_CHOICES = [
         ('Economy',         'Economy'),
         ('Business',        'Business'),
-        ('Premium Economy', 'Premium Economy'),
         ('First',           'First'),
     ]
 
     # Miles awarded per kelas kabin (placeholder — update when spec is available)
     MILES_PER_KELAS = {
         'Economy':         500,
-        'Premium Economy': 750,
         'Business':        1000,
         'First':           1500,
     }
@@ -207,7 +274,7 @@ class ClaimMissingMiles(models.Model):
         return f"CLM-{self.pk:03d}"
 
 
-class Transfer(models.Model):
+class Transfer(models.Model): #13
     email_member_1 = models.ForeignKey(
                          Member,
                          on_delete=models.CASCADE,
@@ -221,7 +288,7 @@ class Transfer(models.Model):
                          related_name='transfers_masuk'
                      )
     timestamp = models.DateTimeField(default=timezone.now)
-    jumlah    = models.IntegerField()
+    jumlah    = models.IntegerField() #not null
     catatan   = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
@@ -231,3 +298,41 @@ class Transfer(models.Model):
 
     def __str__(self):
         return f"{self.email_member_1_id} -> {self.email_member_2_id} | {self.jumlah} miles"
+    
+class Hadiah(models.Model): #14, (Reward)
+    kode_hadiah   = models.CharField(max_length=20, primary_key=True) #Auto increment with format RWD-XXX
+    nama        = models.CharField(max_length=100)
+    jumlah_miles = models.IntegerField() #Not null
+    deskripsi   = models.TextField()
+    valid_start  = models.DateField() #Not Null
+    program_end    = models.DateField() #not null
+    id_penyedia    = models.ForeignKey(
+                        Penyedia,
+                        on_delete=models.PROTECT,
+                        db_column='id_penyedia'
+                        ) #not null
+    
+    class Meta:
+        managed = False
+        db_table = 'HADIAH'
+
+    def __str__(self):
+        return f"{self.id_hadiah} - {self.nama} | {self.jumlah_miles} miles | Stock: {self.stok}"
+
+class Redeem(models.Model):
+    email_member = models.ForeignKey(
+                        Member,
+                        on_delete=models.CASCADE,
+                        db_column='email_member',
+                        related_name='redeems'
+                    )
+    id_hadiah    = models.CharField(max_length=20)
+    timestamp    = models.DateTimeField(default=timezone.now) #Primary Key
+    status       = models.CharField(max_length=20, default='Menunggu')
+
+    class Meta:
+        managed = False
+        db_table = 'REDEEM'
+
+    def __str__(self):
+        return f"Redeem {self.id} | {self.email_member_id} | {self.id_hadiah} | {self.status}"

@@ -9,27 +9,37 @@
         </a>
     </div>
 
+    {% if messages %}
+        <div class="mb-4 space-y-2">
+            {% for message in messages %}
+                <div class="bg-white border border-gray-200 text-gray-800 px-4 py-3 rounded-md shadow-sm">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
     <!-- Filter Section -->
-    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 flex gap-4">
+    <form method="GET" class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 flex gap-4">
         <div class="flex flex-col">
             <label class="text-sm font-medium text-gray-700 mb-1">Filter Penyedia</label>
-            <select class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select name="penyedia" class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">Semua Penyedia</option>
-                <!-- Loop -->
+                {% for penyedia in penyedia_list %}
+                    <option value="{{ penyedia.id }}" {% if penyedia_filter == penyedia.id|stringformat:"s" %}selected{% endif %}>Penyedia {{ penyedia.id }}</option>
+                {% endfor %}
             </select>
         </div>
         <div class="flex flex-col">
             <label class="text-sm font-medium text-gray-700 mb-1">Status Keaktifan</label>
-            <select class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Semua Status</option>
-                <option value="aktif">Aktif</option>
-                <option value="tidak_aktif">Tidak Aktif</option>
+            <select name="status" class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="" {% if not status_filter %}selected{% endif %}>Semua Status</option>
+                <option value="aktif" {% if status_filter == 'aktif' %}selected{% endif %}>Aktif</option>
+                <option value="tidak_aktif" {% if status_filter == 'tidak_aktif' %}selected{% endif %}>Tidak Aktif</option>
             </select>
         </div>
         <div class="flex items-end">
             <button class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-md font-medium border border-gray-300 transition">Filter</button>
         </div>
-    </div>
+    </form>
 
     <!-- Table Section -->
     <div class="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
@@ -45,100 +55,37 @@
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-                <!-- Data Dummy 1: Masih Aktif (Maskapai) -->
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">RWD-001</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">
-                        <div class="font-medium text-gray-900">Voucher Lounge Premium</div>
-                        <div class="truncate w-48 text-xs">Akses lounge premium 2 jam di Terminal 3.</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Garuda Indonesia</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">5000</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        01/01/2026 - 31/12/2026
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 ml-2">Aktif</span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <a href="{% url 'red:edit_hadiah' %}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
-                        <button disabled class="text-gray-400 cursor-not-allowed" title="Periode belum selesai">Hapus</button>
-                    </td>
-                </tr>
-
-                <!-- Data Dummy 2: Kedaluwarsa (Mitra) -->
-                <tr class="hover:bg-gray-50 bg-red-50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">RWD-002</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">
-                        <div class="font-medium text-gray-900">Diskon Hotel 50%</div>
-                        <div class="truncate w-48 text-xs">Potongan setengah harga untuk hotel bintang 4.</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Traveloka</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">3000</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        01/06/2025 - 31/12/2025
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 ml-2">Selesai</span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <a href="{% url 'red:edit_hadiah' %}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
-                        <a href="{% url 'red:hapus_hadiah' %}" class="text-red-600 hover:text-red-900 font-bold">Hapus</a>
-                    </td>
-                </tr>
-
-                <!-- Data Dummy 3: Masih Aktif (Maskapai) -->
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">RWD-003</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">
-                        <div class="font-medium text-gray-900">Upgrade Kelas Bisnis</div>
-                        <div class="truncate w-48 text-xs">Upgrade gratis dari Ekonomi ke Bisnis untuk penerbangan domestik.</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Singapore Airlines</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">15000</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        01/02/2026 - 30/11/2026
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 ml-2">Aktif</span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <a href="{% url 'red:edit_hadiah' %}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
-                        <button disabled class="text-gray-400 cursor-not-allowed" title="Periode belum selesai">Hapus</button>
-                    </td>
-                </tr>
-
-                <!-- Data Dummy 4: Kedaluwarsa (Mitra) -->
-                <tr class="hover:bg-gray-50 bg-red-50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">RWD-004</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">
-                        <div class="font-medium text-gray-900">Tiket Gratis Masuk Dufan</div>
-                        <div class="truncate w-48 text-xs">Tiket terusan untuk 1 orang berlaku di hari kerja.</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Tiket.com</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">8000</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        15/10/2025 - 15/03/2026
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 ml-2">Selesai</span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <a href="{% url 'red:edit_hadiah' %}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
-                        <a href="{% url 'red:hapus_hadiah' %}" class="text-red-600 hover:text-red-900 font-bold">Hapus</a>
-                    </td>
-                </tr>
-
-                <!-- Data Dummy 5: Masih Aktif (Mitra) -->
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">RWD-005</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">
-                        <div class="font-medium text-gray-900">Merchandise Tas Kabin</div>
-                        <div class="truncate w-48 text-xs">Tas kabin eksklusif edisi terbatas AeroMiles.</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">AeroMiles Official</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">2500</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        01/04/2026 - 31/12/2026
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 ml-2">Aktif</span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <a href="{% url 'red:edit_hadiah' %}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
-                        <button disabled class="text-gray-400 cursor-not-allowed" title="Periode belum selesai">Hapus</button>
-                    </td>
-                </tr>
+                {% for hadiah in hadiah_list %}
+                    <tr class="hover:bg-gray-50 {% if not hadiah.is_active %}bg-red-50{% endif %}">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ hadiah.kode_hadiah }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">
+                            <div class="font-medium text-gray-900">{{ hadiah.nama_hadiah }}</div>
+                            <div class="truncate w-48 text-xs">{{ hadiah.deskripsi }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ hadiah.penyedia_nama }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">{{ hadiah.harga_miles }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ hadiah.valid_start_date|date:"d/m/Y" }} - {{ hadiah.program_end|date:"d/m/Y" }}
+                            {% if hadiah.is_active %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 ml-2">Aktif</span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 ml-2">Selesai</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <a href="{% url 'red:edit_hadiah' hadiah.kode_hadiah %}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
+                            {% if hadiah.is_active %}
+                                <button disabled class="text-gray-400 cursor-not-allowed" title="Periode belum selesai">Hapus</button>
+                            {% else %}
+                                <a href="{% url 'red:hapus_hadiah' hadiah.kode_hadiah %}" class="text-red-600 hover:text-red-900 font-bold">Hapus</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500">Belum ada data hadiah.</td>
+                    </tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>

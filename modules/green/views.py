@@ -5,7 +5,7 @@ from django.utils import timezone
 
 from modules.green.models import (
     Member, Staf, Maskapai, Bandara,
-    ClaimMissingMiles, Pengguna
+    ClaimMissingMiles, Pengguna, Transfer
 )
 
 
@@ -333,3 +333,113 @@ def staf_claim_proses(request, pk):
         'staf':  staf,
         'claim': claim,
     })
+
+
+# FITUR 10 — Transfer Miles
+
+@login_required_member
+def transfer_list(request):
+    """R — Riwayat transfer keluar dan masuk milik member."""
+    member = get_member(request)
+
+    transfers_keluar = Transfer.objects.filter(
+        email_member_1=member
+    ).select_related('email_member_2', 'email_member_2__email').order_by('-timestamp')
+
+    transfers_masuk = Transfer.objects.filter(
+        email_member_2=member
+    ).select_related('email_member_1', 'email_member_1__email').order_by('-timestamp')
+
+    # Gabungkan dan tandai tipe
+    riwayat = []
+    for t in transfers_keluar:
+        riwayat.append({
+            'timestamp': t.timestamp,
+            'member_nama': f"{t.email_member_2.email.first_mid_name} {t.email_member_2.email.last_name}",
+            'member_email': t.email_member_2.email_id,
+            'jumlah': t.jumlah,
+            'catatan': t.catatan,
+            'tipe': 'Kirim',
+        })
+    for t in transfers_masuk:
+        riwayat.append({
+            'timestamp': t.timestamp,
+            'member_nama': f"{t.email_member_1.email.first_mid_name} {t.email_member_1.email.last_name}",
+            'member_email': t.email_member_1.email_id,
+            'jumlah': t.jumlah,
+            'catatan': t.catatan,
+            'tipe': 'Terima',
+        })
+
+    # Sort by timestamp descending
+    riwayat.sort(key=lambda x: x['timestamp'], reverse=True)
+
+    context = {
+        'member':  member,
+        'riwayat': riwayat,
+    }
+    return render(request, 'transfer/transfer_list.html', context)
+
+
+@login_required_member
+def transfer_create(request):
+    """C — Buat transfer miles ke member lain."""
+    member = get_member(request)
+
+    if request.method == 'POST':
+        email_penerima = request.POST.get('email_penerima', '').strip()
+        jumlah_str     = request.POST.get('jumlah', '').strip()
+        catatan        = request.POST.get('catatan', '').strip()
+
+        # Validasi email penerima tidak kosong
+        if not email_penerima or not jumlah_str:
+            messages.error(request, 'Email penerima dan jumlah miles wajib diisi.')
+            return render(request, 'transfer/transfer_form.html', {'member': member})
+
+        # Validasi tidak transfer ke diri sendiri
+        if email_penerima == member.email_id:
+            messages.error(request, 'Anda tidak dapat mentransfer miles ke diri sendiri.')
+            return render(request, 'transfer/transfer_form.html', {'member': member})
+
+        # Validasi jumlah adalah angka positif
+        try:
+            jumlah = int(jumlah_str)
+            if jumlah <= 0:
+                raise ValueError
+        except ValueError:
+            messages.error(request, 'Jumlah miles harus berupa angka positif.')
+            return render(request, 'transfer/transfer_form.html', {'member': member})
+
+        # Validasi penerima adalah Member aktif
+        try:
+            penerima = Member.objects.select_related('email').get(email=email_penerima)
+        except Member.DoesNotExist:
+            messages.error(request, 'Email penerima tidak terdaftar sebagai Member aktif.')
+            return render(request, 'transfer/transfer_form.html', {'member': member})
+
+        # Validasi award miles mencukupi
+        if member.award_miles < jumlah:
+            messages.error(request, f'Award miles Anda tidak mencukupi. Tersedia: {member.award_miles} miles.')
+            return render(request, 'transfer/transfer_form.html', {'member': member})
+
+        # Buat transfer
+        Transfer.objects.create(
+            email_member_1=member,
+            email_member_2=penerima,
+            timestamp=timezone.now(),
+            jumlah=jumlah,
+            catatan=catatan if catatan else None,
+        )
+
+        # Kurangi award miles pengirim
+        member.award_miles -= jumlah
+        member.save()
+
+        # Tambah award miles penerima
+        penerima.award_miles += jumlah
+        penerima.save()
+
+        messages.success(request, f'{jumlah} miles berhasil ditransfer ke {email_penerima}.')
+        return redirect('green:transfer_list')
+
+    return render(request, 'transfer/transfer_form.html', {'member': member})

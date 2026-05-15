@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="max-w-7xl mx-auto p-8">
+
+  <h2 class="text-2xl font-semibold">Dashboard</h2>
+  <p class="text-gray-300 mt-1">Selamat datang, {{ user.name }}</p>
+
+  <div class="bg-white text-gray-700 rounded-2xl p-6 mt-6 shadow-sm border border-gray-100">
+    <h3 class="text-lg font-semibold mb-6 text-gray-800">Informasi Pribadi</h3>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-y-6 gap-x-4 text-sm">
+      <div>
+        <p class="text-gray-400 mb-1">Nama:</p>
+        <p class="font-bold text-gray-800">{{ user.name }}</p>
+      </div>
+      <div>
+        <p class="text-gray-400 mb-1">Email:</p>
+        <p class="font-bold text-gray-800">{{ user.email }}</p>
+      </div>
+      <div>
+        <p class="text-gray-400 mb-1">Telepon:</p>
+        <p class="font-bold text-gray-800">{{ user.phone }}</p>
+      </div>
+      <div>
+        <p class="text-gray-400 mb-1">Kewarganegaraan:</p>
+        <p class="font-bold text-gray-800">{{ user.nationality }}</p>
+      </div>
+      <div>
+        <p class="text-gray-400 mb-1">Tanggal Lahir:</p>
+        <p class="font-bold text-gray-800">{{ user.birthdate }}</p>
+      </div>
+      <div>
+        <p class="text-gray-400 mb-1">Tanggal Bergabung:</p>
+        <p class="font-bold text-gray-800">{{ user.joined }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex flex-wrap gap-4 mt-6">
+
+    <div class="bg-white text-gray-700 rounded-2xl p-5 w-44 text-center shadow-sm border border-gray-100 flex flex-col items-center justify-center">
+      <p class="text-xs text-gray-400 uppercase tracking-wider">ID Staff</p>
+      <p class="text-lg font-bold text-gray-800 mt-1">{{ staff.staff_id }}</p>
+    </div>
+
+    <div class="bg-white text-gray-700 rounded-2xl p-5 w-44 text-center shadow-sm border border-gray-100 flex flex-col items-center justify-center">
+      <p class="text-xs text-gray-400 uppercase tracking-wider">Maskapai</p>
+      <p class="text-lg font-bold text-gray-800 mt-1">{{ staff.airline }}</p>
+    </div>
+
+    <div class="bg-white text-gray-700 rounded-2xl p-5 w-44 text-center shadow-sm border-l-4 border-yellow-400 flex flex-col items-center justify-center">
+      <p class="text-xs text-gray-400 uppercase tracking-wider">Klaim Menunggu</p>
+      <p class="text-xl font-bold text-yellow-600 mt-1">{{ staff.pending }}</p>
+    </div>
+
+    <div class="bg-white text-gray-700 rounded-2xl p-5 w-44 text-center shadow-sm border-l-4 border-green-500 flex flex-col items-center justify-center">
+      <p class="text-xs text-gray-400 uppercase tracking-wider">Klaim Disetujui</p>
+      <p class="text-xl font-bold text-green-600 mt-1">{{ staff.approved }}</p>
+    </div>
+
+    <div class="bg-white text-gray-700 rounded-2xl p-5 w-44 text-center shadow-sm border-l-4 border-red-500 flex flex-col items-center justify-center">
+      <p class="text-xs text-gray-400 uppercase tracking-wider">Klaim Ditolak</p>
+      <p class="text-xl font-bold text-red-600 mt-1">{{ staff.rejected }}</p>
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}

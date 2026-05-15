@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Transfer Miles | AeroMiles{% endblock %}
+
+{% block content %}
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="font-heading text-3xl font-bold text-gold-300">Transfer Miles</h1>
+      <p class="text-navy-50 text-sm mt-1">
+        Award Miles tersedia:
+        <span class="text-gold-300 font-semibold">{{ member.award_miles|default:0 }}</span>
+      </p>
+    </div>
+    <a href="{% url 'green:transfer_create' %}"
+       class="flex items-center gap-2 bg-gold-300 hover:bg-gold-200 text-navy-400 font-semibold px-5 py-2.5 rounded-xl transition-colors text-sm">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Transfer Baru
+    </a>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="mb-4 px-4 py-3 rounded-xl text-sm font-medium
+        {% if message.tags == 'success' %}bg-green-500/20 text-green-300 border border-green-500/30
+        {% else %}bg-red-500/20 text-red-300 border border-red-500/30{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Riwayat Transfer -->
+  <div class="bg-navy-300/30 border border-navy-300/50 rounded-2xl overflow-hidden">
+    <div class="px-5 py-4 border-b border-navy-300/50">
+      <h2 class="font-semibold text-white">Riwayat Transfer</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-navy-300/50 text-navy-50 text-xs uppercase tracking-wider">
+            <th class="px-5 py-4 text-left">Waktu</th>
+            <th class="px-5 py-4 text-left">Member</th>
+            <th class="px-5 py-4 text-left">Jumlah Miles</th>
+            <th class="px-5 py-4 text-left">Catatan</th>
+            <th class="px-5 py-4 text-left">Tipe</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-navy-300/30">
+          {% for t in riwayat %}
+          <tr class="hover:bg-navy-300/20 transition-colors">
+            <td class="px-5 py-4 text-navy-50 text-xs">{{ t.timestamp|date:"Y-m-d H:i" }}</td>
+            <td class="px-5 py-4">
+              <div class="font-medium text-white">{{ t.member_nama }}</div>
+              <div class="text-navy-50 text-xs">{{ t.member_email }}</div>
+            </td>
+            <td class="px-5 py-4 font-semibold
+              {% if t.tipe == 'Kirim' %}text-red-300{% else %}text-green-300{% endif %}">
+              {% if t.tipe == 'Kirim' %}-{% else %}+{% endif %}{{ t.jumlah }}
+            </td>
+            <td class="px-5 py-4 text-navy-50">{{ t.catatan|default:"—" }}</td>
+            <td class="px-5 py-4">
+              {% if t.tipe == 'Kirim' %}
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-300 border border-red-500/30">Kirim</span>
+              {% else %}
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-300 border border-green-500/30">Terima</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="px-5 py-12 text-center text-navy-50">
+              Belum ada riwayat transfer.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+{% endblock %}

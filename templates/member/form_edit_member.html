@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 p-6 font-body">
+
+  <!-- Backdrop -->
+  <div class="fixed inset-0 z-40 bg-black/40 flex items-center justify-center">
+    <!-- Modal -->
+    <div class="relative bg-white rounded-lg shadow-2xl max-w-md w-full mx-4">
+      <!-- Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h2 class="font-heading text-lg font-bold text-navy-400">Edit Identitas</h2>
+        <button type="button" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Form Body -->
+      <form class="px-6 py-4 space-y-4">
+        <!-- Nomor Dokumen -->
+        <div>
+          <label class="block text-sm font-semibold text-navy-400 mb-1">Nomor Dokumen</label>
+          <input type="text"
+                 value="{{ identity.nomor_dokumen }}"
+                 placeholder="contoh: SIM0001"
+                 class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-navy-400 placeholder-gray-400 focus:border-navy-200 focus:outline-none focus:ring-2 focus:ring-navy-100 transition-colors">
+        </div>
+
+        <!-- Jenis Dokumen -->
+        <div>
+          <label class="block text-sm font-semibold text-navy-400 mb-1">Jenis Dokumen</label>
+          <select class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-navy-400 focus:border-navy-200 focus:outline-none focus:ring-2 focus:ring-navy-100 transition-colors appearance-none cursor-pointer">
+            <option value="SIM" {% if identity.jenis_dokumen == 'SIM' %}selected{% endif %}>SIM</option>
+            <option value="Paspor" {% if identity.jenis_dokumen == 'Paspor' %}selected{% endif %}>Paspor</option>
+            <option value="KTP" {% if identity.jenis_dokumen == 'KTP' %}selected{% endif %}>KTP</option>
+            <option value="KITAS" {% if identity.jenis_dokumen == 'KITAS' %}selected{% endif %}>KITAS</option>
+          </select>
+        </div>
+
+        <!-- Negara Penerbit -->
+        <div>
+          <label class="block text-sm font-semibold text-navy-400 mb-1">Negara Penerbit</label>
+          <select class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-navy-400 focus:border-navy-200 focus:outline-none focus:ring-2 focus:ring-navy-100 transition-colors appearance-none cursor-pointer">
+            <option value="Indonesia" {% if identity.negara == 'Indonesia' %}selected{% endif %}>Indonesia</option>
+            <option value="Malaysia" {% if identity.negara == 'Malaysia' %}selected{% endif %}>Malaysia</option>
+            <option value="Singapura" {% if identity.negara == 'Singapura' %}selected{% endif %}>Singapura</option>
+            <option value="Thailand" {% if identity.negara == 'Thailand' %}selected{% endif %}>Thailand</option>
+          </select>
+        </div>
+
+        <!-- Tanggal Terbit & Habis -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-semibold text-navy-400 mb-1">Tanggal Terbit</label>
+            <input type="date"
+                   value="{{ identity.tanggal_terbit }}"
+                   class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-navy-400 focus:border-navy-200 focus:outline-none focus:ring-2 focus:ring-navy-100 transition-colors">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-navy-400 mb-1">Tanggal Habis</label>
+            <input type="date"
+                   value="{{ identity.tanggal_habis }}"
+                   class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-navy-400 focus:border-navy-200 focus:outline-none focus:ring-2 focus:ring-navy-100 transition-colors">
+          </div>
+        </div>
+
+        <!-- Footer Buttons -->
+        <div class="flex gap-2 pt-4 border-t border-gray-200 mt-6">
+          <button type="button" class="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-gray-400 border border-gray-200 hover:border-gray-300 hover:text-gray-600 transition-colors">
+            Batal
+          </button>
+          <button type="submit" class="flex-1 px-4 py-2 rounded-lg text-sm font-semibold bg-navy-300 text-white hover:bg-navy-400 transition-colors shadow-sm">
+            Simpan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

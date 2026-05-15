@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="min-h-screen bg-primary text-white">
+  <div class="max-w-7xl mx-auto px-6 py-8">
+
+    <h2 class="text-2xl font-semibold">Laporan & Riwayat Transaksi</h2>
+
+    <!-- SUMMARY -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+
+      <div class="bg-white text-primary p-4 rounded-xl shadow">
+        <p class="text-sm">Total Miles Beredar</p>
+        <p class="font-bold text-lg">{{ summary.total_miles }}</p>
+      </div>
+
+      <div class="bg-white text-primary p-4 rounded-xl shadow">
+        <p class="text-sm">Total Redeem Bulan Ini</p>
+        <p class="font-bold text-lg">{{ summary.redeem }}</p>
+      </div>
+
+      <div class="bg-white text-primary p-4 rounded-xl shadow">
+        <p class="text-sm">Total Klaim Disetujui</p>
+        <p class="font-bold text-lg">{{ summary.klaim }}</p>
+      </div>
+
+    </div>
+
+    <!-- TABS -->
+    <div class="flex gap-3 mt-6">
+      <a href="?tab=riwayat"
+         class="px-4 py-2 rounded-lg {% if tab == 'riwayat' %}bg-white text-primary{% else %}bg-white/20{% endif %}">
+        Riwayat Transaksi
+      </a>
+
+      <a href="?tab=top"
+         class="px-4 py-2 rounded-lg {% if tab == 'top' %}bg-white text-primary{% else %}bg-white/20{% endif %}">
+        Top Member
+      </a>
+    </div>
+
+    {% if tab == "riwayat" %}
+
+    <!-- FILTER -->
+    <div class="mt-4">
+      <select class="bg-white text-primary px-3 py-2 rounded-lg text-sm">
+        <option>Semua Tipe</option>
+        <option>Transfer</option>
+        <option>Redeem</option>
+        <option>Package</option>
+        <option>Klaim</option>
+      </select>
+    </div>
+
+    <!-- TABLE -->
+    <div class="bg-white text-primary rounded-xl p-4 mt-4 shadow">
+      <table class="w-full text-sm">
+
+        <thead>
+          <tr class="border-b">
+            <th class="text-left py-2">Tipe</th>
+            <th class="text-left py-2">Member</th>
+            <th class="text-left py-2">Miles</th>
+            <th class="text-left py-2">Waktu</th>
+            <th class="text-left py-2">Aksi</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for t in transactions %}
+          <tr class="border-b">
+            <td>{{ t.type }}</td>
+
+            <td>
+              <div class="font-semibold">{{ t.user }}</div>
+              <div class="text-xs text-gray-500">{{ t.email }}</div>
+            </td>
+
+            <td class="{% if t.miles < 0 %}text-red-500{% else %}text-green-600{% endif %}">
+              {{ t.miles }}
+            </td>
+
+            <td>{{ t.date }}</td>
+
+            <td>
+              <button onclick="openDeleteModal()"
+                class="text-red-500 hover:text-red-700">
+                🗑
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+
+      </table>
+    </div>
+
+    {% else %}
+
+    <!-- TOP MEMBER -->
+    <div class="bg-white text-primary rounded-xl p-4 mt-4 shadow">
+      <h3 class="font-semibold mb-3">Top Member</h3>
+
+      {% for m in top_members %}
+      <div class="flex justify-between border-b py-2">
+        <span>{{ m.name }}</span>
+        <span class="font-semibold">{{ m.total }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div id="deleteModal"
+     class="hidden fixed inset-0 bg-black/50 flex items-center justify-center">
+
+  <div class="bg-white text-primary p-6 rounded-xl w-[400px] shadow">
+
+    <h3 class="font-semibold text-lg mb-2">Hapus Riwayat?</h3>
+    <p class="text-sm text-gray-600">
+      Penghapusan bersifat permanen dan tidak dapat dibatalkan.
+    </p>
+
+    <div class="flex justify-end gap-2 mt-4">
+      <button onclick="closeDeleteModal()"
+        class="px-4 py-2 bg-gray-200 rounded-lg">
+        Batal
+      </button>
+
+      <button class="px-4 py-2 bg-red-500 text-white rounded-lg">
+        Hapus
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function openDeleteModal() {
+    document.getElementById("deleteModal").classList.remove("hidden");
+}
+function closeDeleteModal() {
+    document.getElementById("deleteModal").classList.add("hidden");
+}
+</script>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        primary: '#25354c',
+        gold: '#f2d56d'
+      }
+    }
+  }
+}
+</script>
+
+{% endblock %}

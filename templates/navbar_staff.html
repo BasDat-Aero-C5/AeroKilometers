@@ -1,0 +1,70 @@
+{% load static %}
+
+<nav class="fixed top-0 left-0 w-full z-50 bg-navy-300/95 backdrop-blur-xl border-b border-navy-200/30 shadow-xl">
+  <div class="mx-auto px-4 sm:px-6 lg:px-20">
+    <div class="flex items-center justify-between h-24">
+      <div class="flex items-center gap-3">
+        <a href="{% url 'main:home' %}" class="flex items-center gap-3">
+          <img src="{% static 'img/logo.png' %}" alt="AeroMiles Logo" class="h-10 w-auto">
+          <div>
+            <p class="text-white font-bold text-lg tracking-tight">AeroMiles</p>
+            <p class="text-navy-50 text-xs uppercase tracking-[0.24em]">Staff Portal</p>
+          </div>
+        </a>
+      </div>
+
+      <!-- Desktop Menu -->
+      <div class="hidden lg:flex items-center gap-1 text-sm font-medium text-navy-50">
+        <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Dashboard</a>
+        <a href="{% url 'yellow:staff_page' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Kelola Member</a>
+        <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Kelola Klaim</a>
+        <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Kelola Hadiah</a>
+        <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Kelola Mitra</a>
+        <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Laporan</a>
+        <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Profil</a>
+      </div>
+
+      <!-- Logout Button -->
+      <div class="hidden md:flex items-center">
+        <button type="button" class="px-5 py-2 text-gold-300 border border-gold-300 rounded-full hover:bg-gold-300 hover:text-navy-800 transition-colors font-medium">Logout</button>
+      </div>
+
+      <!-- Mobile Menu Button -->
+      <div class="md:hidden flex items-center">
+        <button type="button" class="mobile-menu-button inline-flex items-center justify-center p-2 rounded-full text-navy-50 border border-navy-100 hover:bg-navy-400 transition-colors">
+          <span class="sr-only">Open menu</span>
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu hidden md:hidden pb-6">
+      <div class="space-y-2 mt-2 px-2">
+        <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Dashboard</a>
+        <a href="{% url 'yellow:staff_page' %}" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Kelola Member</a>
+        <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Kelola Klaim</a>
+        <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Kelola Hadiah</a>
+        <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Kelola Mitra</a>
+        <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Laporan</a>
+        <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Profil</a>
+      </div>
+      <div class="mt-4 px-2">
+        <button type="button" class="w-full rounded-full px-4 py-3 text-gold-300 border border-gold-300 hover:bg-gold-300 hover:text-navy-800 transition-colors font-medium">Logout</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const button = document.querySelector('.mobile-menu-button');
+    const menu = document.querySelector('.mobile-menu');
+    if (!button || !menu) return;
+    button.addEventListener('click', () => {
+      menu.classList.toggle('hidden');
+    });
+  });
+</script>

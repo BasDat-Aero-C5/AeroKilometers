@@ -5,59 +5,65 @@
     <div class="bg-white p-8 rounded-lg shadow border border-gray-200">
         <h2 class="text-2xl font-bold text-gray-800 mb-6">Edit Hadiah</h2>
         
-        <form action="#" method="POST">
+        <form method="POST">
             {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="mb-4 text-sm text-red-600">{{ form.non_field_errors }}</div>
+            {% endif %}
             
             <div class="grid grid-cols-1 gap-6">
                 <!-- Kode Hadiah (Read-Only) -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Kode Hadiah</label>
-                    <input type="text" value="RWD-001" readonly class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 text-gray-500 cursor-not-allowed sm:text-sm">
+                    <input type="text" value="{{ hadiah.kode_hadiah }}" readonly class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 text-gray-500 cursor-not-allowed sm:text-sm">
                     <p class="mt-1 text-xs text-gray-500">Kode hadiah tidak dapat diubah.</p>
                 </div>
 
                 <!-- Nama Hadiah -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Nama Hadiah</label>
-                    <input type="text" value="Voucher Lounge Premium" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    {{ form.nama_hadiah }}
+                    {{ form.nama_hadiah.errors }}
                 </div>
 
                 <!-- Penyedia -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Penyedia</label>
-                    <select class="mt-1 block w-full border bg-white border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                        <option value="1" selected>Garuda Indonesia (Maskapai)</option>
-                        <option value="2">Traveloka (Mitra)</option>
-                    </select>
+                    {{ form.id_penyedia }}
+                    {{ form.id_penyedia.errors }}
                 </div>
 
                 <!-- Miles -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Harga (Miles)</label>
-                    <input type="number" value="5000" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    {{ form.harga_miles }}
+                    {{ form.harga_miles.errors }}
                 </div>
 
                 <!-- Deskripsi -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Deskripsi</label>
-                    <textarea rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">Akses lounge premium 2 jam di Terminal 3.</textarea>
+                    {{ form.deskripsi }}
+                    {{ form.deskripsi.errors }}
                 </div>
 
                 <!-- Validitas (Start & End) -->
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Valid Start Date</label>
-                        <input type="date" value="2026-01-01" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        {{ form.valid_start_date }}
+                        {{ form.valid_start_date.errors }}
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Program End</label>
-                        <input type="date" value="2026-12-31" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        {{ form.program_end }}
+                        {{ form.program_end.errors }}
                     </div>
                 </div>
             </div>
 
             <div class="mt-8 flex justify-end space-x-3">
-                <a href="#" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none">Batal</a>
+                <a href="{% url 'red:daftar_hadiah' %}" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none">Batal</a>
                 <button type="submit" class="bg-blue-600 border border-transparent rounded-md shadow-sm py-2 px-4 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none">Simpan Perubahan</button>
             </div>
         </form>

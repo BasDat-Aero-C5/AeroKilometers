@@ -5,19 +5,22 @@
     <div class="bg-white p-8 rounded-lg shadow border border-gray-200">
         <h2 class="text-2xl font-bold text-gray-800 mb-6">Edit Data Mitra</h2>
         
-        <form action="#" method="POST">
+        <form method="POST">
             {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="mb-4 text-sm text-red-600">{{ form.non_field_errors }}</div>
+            {% endif %}
             
             <div class="grid grid-cols-1 gap-6">
                 <!-- ID Penyedia & Email Mitra (Read-Only) -->
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">ID Penyedia</label>
-                        <input type="text" value="102" readonly class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 text-gray-500 cursor-not-allowed sm:text-sm">
+                        <input type="text" value="{{ mitra.id_penyedia_id }}" readonly class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 text-gray-500 cursor-not-allowed sm:text-sm">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Email Mitra</label>
-                        <input type="email" value="contact@traveloka.com" readonly class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 text-gray-500 cursor-not-allowed sm:text-sm">
+                        <input type="email" value="{{ mitra.email_mitra }}" readonly class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 text-gray-500 cursor-not-allowed sm:text-sm">
                     </div>
                 </div>
                 <p class="text-xs text-gray-500 mt-[-1rem]">ID Penyedia dan Email Mitra (sebagai *primary key*) tidak dapat diubah.</p>
@@ -25,13 +28,15 @@
                 <!-- Nama Mitra -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Nama Mitra</label>
-                    <input type="text" value="Traveloka" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
+                    {{ form.nama_mitra }}
+                    {{ form.nama_mitra.errors }}
                 </div>
 
                 <!-- Tanggal Kerja Sama -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Tanggal Kerja Sama</label>
-                    <input type="date" value="2025-03-15" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
+                    {{ form.tanggal_kerja_sama }}
+                    {{ form.tanggal_kerja_sama.errors }}
                 </div>
             </div>
 

@@ -91,16 +91,9 @@ def execute_raw_sql_update(sql, params=None):
 
 def authenticate_pengguna(email, password):
     """Authenticate against the database using the stored function if available."""
-    try:
-        if settings.PRODUCTION:
-            sql = "SELECT * FROM authenticate_pengguna(%s, %s)"
-            rows = execute_raw_sql(sql, [email, password])
-        else:
-            sql = "SELECT * FROM PENGGUNA WHERE email = %s AND password = %s"
-            rows = execute_raw_sql(sql, [email, password])
-        return rows[0] if rows else None
-    except Exception as e:
-        raise
+    sql = "SELECT * FROM PENGGUNA WHERE email = %s AND password = %s"
+    rows = execute_raw_sql(sql, [email, password])
+    return rows[0] if rows else None
 
 
 def get_member_data(email):

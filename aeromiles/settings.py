@@ -33,6 +33,9 @@ DEBUG = not PRODUCTION
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "healthcheck.railway.app", ".railway.app"] + [h for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h]
 
+CSRF_TRUSTED_ORIGINS = [
+    "aerokilometers-production.up.railway.app",
+]
 
 # Application definition
 
@@ -55,7 +58,6 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',

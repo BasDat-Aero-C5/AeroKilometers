@@ -56,9 +56,9 @@
 
 <body class="bg-navy-400 text-white font-body min-h-screen flex flex-col">
 
-  {% if navbar_type == 'staff' %}
+  {% if request.session.role == 'staff' %}
     {% include 'navbar_staff.html' %}
-  {% elif navbar_type == 'member' %}
+  {% elif request.session.role == 'member' %}
     {% include 'navbar.html' %}
   {% else %}
     {% include 'navbar_guest.html' %}

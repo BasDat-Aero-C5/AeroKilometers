@@ -8,7 +8,19 @@ from psycopg2.extras import RealDictCursor
 import os
 from urllib.parse import urlparse
 
-from modules.green.models import Staf, Member
+
+class DBRow(dict):
+    def __getattr__(self, name):
+        if name in self:
+            return self[name]
+        if name == 'pk' and 'id' in self:
+            return self['id']
+        if name == 'email_id' and 'email' in self:
+            return self['email']
+        raise AttributeError(f"Attribute {name} not found")
+
+    def __setattr__(self, name, value):
+        self[name] = value
 
 
 # Database connection helper
@@ -96,10 +108,21 @@ def get_staf(request):
     
     if not email or role != 'staff':
         return None
-    try:
-        return Staf.objects.select_related('email', 'kode_maskapai').get(email=email)
-    except Staf.DoesNotExist:
-        return None
+
+    sql = """
+        SELECT s.email, s.id_staf, s.kode_maskapai,
+               m.nama_maskapai,
+               p.first_mid_name, p.last_name, p.salutation,
+               p.country_code, p.mobile_number,
+               p.tanggal_lahir, p.kewarganegaraan,
+               s.email AS email_id
+        FROM STAF s
+        JOIN PENGGUNA p ON s.email = p.email
+        JOIN MASKAPAI m ON s.kode_maskapai = m.kode_maskapai
+        WHERE s.email = %s
+    """
+    rows = execute_raw_sql(sql, [email])
+    return DBRow(rows[0]) if rows else None
 
 
 def login_required_staff(view_func):

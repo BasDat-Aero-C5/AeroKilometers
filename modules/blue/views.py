@@ -8,7 +8,21 @@ from psycopg2.extras import RealDictCursor
 import os
 from urllib.parse import urlparse
 
-from modules.green.models import Member, Staf
+
+class DBRow(dict):
+    def __getattr__(self, name):
+        if name in self:
+            return self[name]
+        if name == 'pk' and 'id' in self:
+            return self['id']
+        if name == 'email_id' and 'email' in self:
+            return self['email']
+        if name == 'id_tier_id' and 'id_tier' in self:
+            return self['id_tier']
+        raise AttributeError(f"Attribute {name} not found")
+
+    def __setattr__(self, name, value):
+        self[name] = value
 
 
 # Database connection helper
@@ -96,10 +110,20 @@ def get_member(request):
     
     if not email or role != 'member':
         return None
-    try:
-        return Member.objects.select_related('email', 'id_tier').get(email=email)
-    except Member.DoesNotExist:
-        return None
+
+    sql = """
+        SELECT m.email, m.nomor_member, m.tanggal_bergabung, m.id_tier,
+               m.award_miles, m.total_miles,
+               p.first_mid_name, p.last_name, p.salutation,
+               p.country_code, p.mobile_number,
+               p.tanggal_lahir, p.kewarganegaraan,
+               m.email AS email_id
+        FROM MEMBER m
+        JOIN PENGGUNA p ON m.email = p.email
+        WHERE m.email = %s
+    """
+    rows = execute_raw_sql(sql, [email])
+    return DBRow(rows[0]) if rows else None
 
 
 def get_staf(request):
@@ -109,10 +133,21 @@ def get_staf(request):
     
     if not email or role != 'staff':
         return None
-    try:
-        return Staf.objects.select_related('email', 'kode_maskapai').get(email=email)
-    except Staf.DoesNotExist:
-        return None
+
+    sql = """
+        SELECT s.email, s.id_staf, s.kode_maskapai,
+               m.nama_maskapai,
+               p.first_mid_name, p.last_name, p.salutation,
+               p.country_code, p.mobile_number,
+               p.tanggal_lahir, p.kewarganegaraan,
+               s.email AS email_id
+        FROM STAF s
+        JOIN PENGGUNA p ON s.email = p.email
+        JOIN MASKAPAI m ON s.kode_maskapai = m.kode_maskapai
+        WHERE s.email = %s
+    """
+    rows = execute_raw_sql(sql, [email])
+    return DBRow(rows[0]) if rows else None
 
 
 def login_required_member(view_func):
@@ -218,7 +253,8 @@ def redeem_confirm(request):
         execute_raw_sql_update(sql_redeem, [member.email_id, kode_hadiah, timezone.now()])
         
         member.award_miles -= harga_miles
-        member.save()
+        sql_update_miles = "UPDATE MEMBER SET award_miles = award_miles - %s WHERE email = %s"
+        execute_raw_sql_update(sql_update_miles, [harga_miles, member.email_id])
         
         messages.success(request, f'Hadiah berhasil ditukar. {harga_miles} award miles dikurangi dari akun Anda.')
         
@@ -282,7 +318,8 @@ def buy_package(request):
         
         member.award_miles += package['miles']
         member.total_miles += package['miles']
-        member.save()
+        sql_update_miles = "UPDATE MEMBER SET award_miles = award_miles + %s, total_miles = total_miles + %s WHERE email = %s"
+        execute_raw_sql_update(sql_update_miles, [package['miles'], package['miles'], member.email_id])
         
         messages.success(request, f'Paket {package["miles"]} miles berhasil dibeli!')
         
@@ -495,7 +532,8 @@ def redeem_confirm(request):
         
         # Deduct award miles
         member.award_miles -= harga_miles
-        member.save()
+        sql_update_miles = "UPDATE MEMBER SET award_miles = award_miles - %s WHERE email = %s"
+        execute_raw_sql_update(sql_update_miles, [harga_miles, member.email_id])
         
         messages.success(request, f'Hadiah berhasil ditukar. {harga_miles} award miles dikurangi dari akun Anda.')
         
@@ -563,7 +601,8 @@ def buy_package(request):
         # Add award miles
         member.award_miles += package['miles']
         member.total_miles += package['miles']
-        member.save()
+        sql_update_miles = "UPDATE MEMBER SET award_miles = award_miles + %s, total_miles = total_miles + %s WHERE email = %s"
+        execute_raw_sql_update(sql_update_miles, [package['miles'], package['miles'], member.email_id])
         
         messages.success(request, f'Paket {package["miles"]} miles berhasil dibeli!')
         

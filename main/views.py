@@ -4,6 +4,7 @@ from django.db import IntegrityError
 from django.utils import timezone
 from django.conf import settings
 from django.middleware.csrf import get_token
+from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
@@ -196,6 +197,7 @@ def homepage(request):
     return render(request, 'homepage.html', {'stats_data': stats})
 
 
+@ensure_csrf_cookie
 def login(request):
     if request.method == 'POST':
         email = request.POST.get('email', '').strip()
@@ -229,6 +231,7 @@ def login(request):
     return render(request, 'login.html', {'navbar_type': 'guest', 'csrf_token': get_token(request)})
 
 
+@ensure_csrf_cookie
 def register(request):
     if request.method == 'POST':
         role = request.POST.get('role', 'member')

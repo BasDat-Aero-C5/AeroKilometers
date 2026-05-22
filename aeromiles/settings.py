@@ -33,9 +33,6 @@ DEBUG = not PRODUCTION
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "healthcheck.railway.app", ".railway.app"] + [h for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h]
 
-CSRF_TRUSTED_ORIGINS = [
-    "aerokilometers-production.up.railway.app",
-]
 
 # Application definition
 

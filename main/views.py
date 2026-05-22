@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.db import IntegrityError
 from django.utils import timezone
 from django.conf import settings
+from django.middleware.csrf import get_token
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
@@ -202,13 +203,13 @@ def login(request):
 
         if not email or not password:
             messages.error(request, 'Email dan password wajib diisi.')
-            return render(request, 'login.html', {'navbar_type': 'guest'})
+            return render(request, 'login.html', {'navbar_type': 'guest', 'csrf_token': get_token(request)})
 
         try:
             pengguna = authenticate_pengguna(email, password)
             if not pengguna:
                 messages.error(request, 'Email atau password salah.')
-                return render(request, 'login.html', {'navbar_type': 'guest'})
+                return render(request, 'login.html', {'navbar_type': 'guest', 'csrf_token': get_token(request)})
 
             member_rows = execute_raw_sql('SELECT email FROM MEMBER WHERE email = %s', [email])
             staf_rows = execute_raw_sql('SELECT email FROM STAF WHERE email = %s', [email])
@@ -225,7 +226,7 @@ def login(request):
         except Exception as e:
             messages.error(request, str(e))
 
-    return render(request, 'login.html', {'navbar_type': 'guest'})
+    return render(request, 'login.html', {'navbar_type': 'guest', 'csrf_token': get_token(request)})
 
 
 def register(request):
@@ -245,15 +246,15 @@ def register(request):
 
         if not all([email, password, confirm_password, salutation, first_mid_name, last_name, country_code, mobile_number, tanggal_lahir, kewarganegaraan]):
             messages.error(request, 'Semua field wajib diisi.')
-            return render(request, 'register.html', {'navbar_type': 'guest'})
+            return render(request, 'register.html', {'navbar_type': 'guest', 'csrf_token': get_token(request)})
 
         if password != confirm_password:
             messages.error(request, 'Password dan konfirmasi password tidak cocok.')
-            return render(request, 'register.html', {'navbar_type': 'guest'})
+            return render(request, 'register.html', {'navbar_type': 'guest', 'csrf_token': get_token(request)})
 
         if role == 'staf' and not kode_maskapai:
             messages.error(request, 'Kode maskapai wajib diisi untuk staf.')
-            return render(request, 'register.html', {'navbar_type': 'guest'})
+            return render(request, 'register.html', {'navbar_type': 'guest', 'csrf_token': get_token(request)})
 
         try:
             sql_pengguna = (
@@ -283,7 +284,7 @@ def register(request):
             else:
                 messages.error(request, error_message)
 
-    return render(request, 'register.html', {'navbar_type': 'guest'})
+    return render(request, 'register.html', {'navbar_type': 'guest', 'csrf_token': get_token(request)})
 
 
 def dashboard_member(request):

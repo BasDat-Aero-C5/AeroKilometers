@@ -139,9 +139,29 @@ def get_staf_claim_stats(email):
     return result[0] if result else None
 
 
+def get_homepage_stats():
+    """Return homepage statistic cards based on current DB counts."""
+    queries = {
+        'Member Aktif': "SELECT COUNT(*) as cnt FROM MEMBER",
+        'Maskapai Partner': "SELECT COUNT(*) as cnt FROM MASKAPAI",
+        'Bandara Terhubung': "SELECT COUNT(*) as cnt FROM BANDARA",
+        'Hadiah Menanti': "SELECT COUNT(*) as cnt FROM HADIAH",
+    }
+
+    stats = []
+    for label, sql in queries.items():
+        rows = execute_raw_sql(sql)
+        cnt = rows[0].get('cnt', 0) if rows else 0
+        stats.append({'label': label, 'value': f"{cnt:,}"})
+
+    return stats
+
+
 # Create your views here.
 def homepage(request):
-    return render(request, 'homepage.html')
+    # Provide homepage statistics pulled from the database
+    stats = get_homepage_stats()
+    return render(request, 'homepage.html', {'stats_data': stats})
 
 
 def login(request):

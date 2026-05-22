@@ -58,10 +58,10 @@
 
   {% if navbar_type == 'staff' %}
     {% include 'navbar_staff.html' %}
-  {% elif navbar_type == 'guest' %}
-    {% include 'navbar_guest.html' %}
-  {% else %}
+  {% elif navbar_type == 'member' %}
     {% include 'navbar.html' %}
+  {% else %}
+    {% include 'navbar_guest.html' %}
   {% endif %}
 
   <main class="flex-1 w-full max-w-7xl mx-auto px-4 pt-28 pb-6">

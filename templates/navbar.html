@@ -17,9 +17,9 @@
           <a href="{% url 'main:dashboard_member' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Dashboard</a>
           <a href="{% url 'main:profile' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Identitas Saya</a>
           <a href="{% url 'green:claim_list' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Klaim Miles</a>
-          <a href="{% url 'green:transfer_miles' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Transfer Miles</a>
+          <a href="{% url 'green:transfer_list' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Transfer Miles</a>
           <a href="{% url 'blue:redeem_hadiah' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Redeem Hadiah</a>
-          <a href="{% url 'blue:buy_package' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Beli Package</a>
+          <a href="{% url 'blue:package_list' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Beli Package</a>
           <a href="{% url 'blue:tier_info' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Info Tier</a>
         </div>
         <div class="hidden md:flex items-center gap-3">
@@ -39,12 +39,12 @@
     <div class="mobile-menu hidden md:hidden pb-6">
         <div class="space-y-3 mt-2 px-2">
           <a href="{% url 'main:dashboard_member' %}" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Dashboard</a>
-          <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Identitas Saya</a>
-          <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Klaim Miles</a>
-          <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Transfer Miles</a>
-          <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Redeem Hadiah</a>
-          <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Beli Package</a>
-          <a href="#" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Info Tier</a>
+          <a href="{% url 'main:profile' %}" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Identitas Saya</a>
+          <a href="{% url 'green:claim_list' %}" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Klaim Miles</a>
+          <a href="{% url 'green:transfer_list' %}" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Transfer Miles</a>
+          <a href="{% url 'blue:redeem_hadiah' %}" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Redeem Hadiah</a>
+          <a href="{% url 'blue:package_list' %}" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Beli Package</a>
+          <a href="{% url 'blue:tier_info' %}" class="block rounded-2xl px-4 py-3 text-navy-50 bg-navy-400/20 hover:bg-navy-400 transition-colors">Info Tier</a>
         </div>
         <div class="mt-4 px-2 space-y-3">
           <button type="button" class="w-full rounded-full px-4 py-3 text-center text-gold-300 border border-gold-300 hover:bg-gold-300 hover:text-navy-800 transition-colors">Logout</button>

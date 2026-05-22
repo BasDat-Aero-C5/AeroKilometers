@@ -10,7 +10,6 @@
         </div>
 
         <form action="" method="POST" class="space-y-6">
-            {% csrf_token %}
             {% if messages %}
                 <div class="rounded-md bg-red-50 p-4 text-sm text-red-700">
                     {% for message in messages %}

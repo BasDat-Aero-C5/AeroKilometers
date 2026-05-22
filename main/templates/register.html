@@ -9,8 +9,15 @@
             <p class="text-sm text-gray-600 mt-1">Lengkapi data diri Anda untuk bergabung bersama kami.</p>
         </div>
 
-        <form action="#" method="POST" class="space-y-6">
-            <!-- {% csrf_token %} -->
+        <form action="" method="POST" class="space-y-6">
+            {% csrf_token %}
+            {% if messages %}
+                <div class="rounded-md bg-red-50 p-4 text-sm text-red-700">
+                    {% for message in messages %}
+                        <div>{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
 
             <!-- Pilihan Role -->
             <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">

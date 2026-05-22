@@ -72,6 +72,37 @@ def execute_raw_sql(sql, params=None):
         return []
 
 
+def execute_raw_sql_update(sql, params=None):
+    """Execute a raw INSERT/UPDATE/DELETE query."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        sql = adapt_sql(sql)
+        cursor.execute(sql, params or [])
+        conn.commit()
+        cursor.close()
+        if settings.PRODUCTION:
+            conn.close()
+        return True
+    except Exception as e:
+        print(f"Database error: {e}")
+        raise
+
+
+def authenticate_pengguna(email, password):
+    """Authenticate against the database using the stored function if available."""
+    try:
+        if settings.PRODUCTION:
+            sql = "SELECT * FROM authenticate_pengguna(%s, %s)"
+            rows = execute_raw_sql(sql, [email, password])
+        else:
+            sql = "SELECT * FROM PENGGUNA WHERE email = %s AND password = %s"
+            rows = execute_raw_sql(sql, [email, password])
+        return rows[0] if rows else None
+    except Exception as e:
+        raise
+
+
 def get_member_data(email):
     """Return Member data by email."""
     sql = """
@@ -165,10 +196,93 @@ def homepage(request):
 
 
 def login(request):
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip()
+        password = request.POST.get('password', '').strip()
+
+        if not email or not password:
+            messages.error(request, 'Email dan password wajib diisi.')
+            return render(request, 'login.html', {'navbar_type': 'guest'})
+
+        try:
+            pengguna = authenticate_pengguna(email, password)
+            if not pengguna:
+                messages.error(request, 'Email atau password salah.')
+                return render(request, 'login.html', {'navbar_type': 'guest'})
+
+            member_rows = execute_raw_sql('SELECT email FROM MEMBER WHERE email = %s', [email])
+            staf_rows = execute_raw_sql('SELECT email FROM STAF WHERE email = %s', [email])
+
+            request.session['email'] = email
+            if member_rows:
+                request.session['role'] = 'member'
+                return redirect('main:dashboard_member')
+            if staf_rows:
+                request.session['role'] = 'staff'
+                return redirect('main:dashboard_staff')
+
+            messages.error(request, 'Akun ditemukan tetapi tidak memiliki profil Member atau Staff.')
+        except Exception as e:
+            messages.error(request, str(e))
+
     return render(request, 'login.html', {'navbar_type': 'guest'})
 
 
 def register(request):
+    if request.method == 'POST':
+        role = request.POST.get('role', 'member')
+        email = request.POST.get('email', '').strip()
+        password = request.POST.get('password', '').strip()
+        confirm_password = request.POST.get('konfirmasi_password', '').strip()
+        salutation = request.POST.get('salutation', '').strip()
+        first_mid_name = request.POST.get('first_mid_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        country_code = request.POST.get('country_code', '').strip()
+        mobile_number = request.POST.get('mobile_number', '').strip()
+        tanggal_lahir = request.POST.get('tanggal_lahir', '').strip()
+        kewarganegaraan = request.POST.get('kewarganegaraan', '').strip()
+        kode_maskapai = request.POST.get('kode_maskapai', '').strip()
+
+        if not all([email, password, confirm_password, salutation, first_mid_name, last_name, country_code, mobile_number, tanggal_lahir, kewarganegaraan]):
+            messages.error(request, 'Semua field wajib diisi.')
+            return render(request, 'register.html', {'navbar_type': 'guest'})
+
+        if password != confirm_password:
+            messages.error(request, 'Password dan konfirmasi password tidak cocok.')
+            return render(request, 'register.html', {'navbar_type': 'guest'})
+
+        if role == 'staf' and not kode_maskapai:
+            messages.error(request, 'Kode maskapai wajib diisi untuk staf.')
+            return render(request, 'register.html', {'navbar_type': 'guest'})
+
+        try:
+            sql_pengguna = (
+                'INSERT INTO PENGGUNA (email, password, salutation, first_mid_name, last_name, country_code, mobile_number, tanggal_lahir, kewarganegaraan) '
+                'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)'
+            )
+            execute_raw_sql_update(sql_pengguna, [email, password, salutation, first_mid_name, last_name, country_code, mobile_number, tanggal_lahir, kewarganegaraan])
+
+            if role == 'member':
+                nomor_member = f'M{int(timezone.now().timestamp()) % 1000000:06d}'
+                sql_member = (
+                    'INSERT INTO MEMBER (email, nomor_member, tanggal_bergabung, id_tier, award_miles, total_miles) '
+                    'VALUES (%s, %s, %s, %s, %s, %s)'
+                )
+                execute_raw_sql_update(sql_member, [email, nomor_member, timezone.now().date(), 'T1', 0, 0])
+            else:
+                id_staf = f'S{int(timezone.now().timestamp()) % 1000000:06d}'
+                sql_staf = 'INSERT INTO STAF (email, id_staf, kode_maskapai) VALUES (%s, %s, %s)'
+                execute_raw_sql_update(sql_staf, [email, id_staf, kode_maskapai])
+
+            messages.success(request, 'Pendaftaran berhasil. Silakan login.')
+            return redirect('main:login')
+        except Exception as e:
+            error_message = str(e)
+            if 'duplicate' in error_message.lower() or 'already exists' in error_message.lower() or 'sudah terdaftar' in error_message.lower():
+                messages.error(request, 'Email sudah terdaftar. Gunakan email lain.')
+            else:
+                messages.error(request, error_message)
+
     return render(request, 'register.html', {'navbar_type': 'guest'})
 
 

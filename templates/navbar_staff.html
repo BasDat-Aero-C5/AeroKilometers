@@ -17,11 +17,11 @@
       <div class="hidden lg:flex items-center gap-1 text-sm font-medium text-navy-50">
         <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Dashboard</a>
         <a href="{% url 'yellow:staff_page' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Kelola Member</a>
-        <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Kelola Klaim</a>
-        <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Kelola Hadiah</a>
-        <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Kelola Mitra</a>
-        <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Laporan</a>
-        <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Profil</a>
+        <a href="{% url 'yellow:claims_page' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Kelola Klaim</a>
+        <a href="{% url 'yellow:rewards_page' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Kelola Hadiah</a>
+        <a href="{% url 'yellow:partners_page' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Kelola Mitra</a>
+        <a href="{% url 'yellow:reports_page' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Laporan</a>
+        <a href="{% url 'yellow:profile_page' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Profil</a>
       </div>
 
       <!-- Logout Button -->

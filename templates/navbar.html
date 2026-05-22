@@ -15,12 +15,12 @@
 
         <div class="hidden lg:flex items-center gap-2 text-sm font-medium text-navy-50">
           <a href="{% url 'main:dashboard_member' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Dashboard</a>
-          <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Identitas Saya</a>
-          <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Klaim Miles</a>
-          <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Transfer Miles</a>
-          <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Redeem Hadiah</a>
-          <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Beli Package</a>
-          <a href="#" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Info Tier</a>
+          <a href="{% url 'main:profile' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Identitas Saya</a>
+          <a href="{% url 'main:claim_miles' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Klaim Miles</a>
+          <a href="{% url 'main:transfer_miles' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Transfer Miles</a>
+          <a href="{% url 'main:redeem_rewards' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Redeem Hadiah</a>
+          <a href="{% url 'main:buy_package' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Beli Package</a>
+          <a href="{% url 'main:info_tier' %}" class="px-4 py-2 rounded-full hover:bg-navy-400 transition-colors">Info Tier</a>
         </div>
         <div class="hidden md:flex items-center gap-3">
           <button type="button" class="px-5 py-2 text-gold-300 border border-gold-300 rounded-full hover:bg-gold-300 hover:text-navy-800 transition-colors">Logout</button>

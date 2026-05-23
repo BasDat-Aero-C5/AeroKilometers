@@ -364,7 +364,7 @@ def dashboard_staff(request):
 
 def profile_view(request):
     email = request.session.get('email')
-    role = request.GET.get("role", "member")
+    role = request.GET.get("role") or request.session.get("role") or "member"
     
     if not email:
         return redirect('main:login')

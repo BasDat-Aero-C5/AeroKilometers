@@ -207,13 +207,15 @@ class ClaimMissingMiles(models.Model):
     ]
     KELAS_CHOICES = [
         ('Economy',         'Economy'),
+        ('Premium Economy','Premium Economy'),
         ('Business',        'Business'),
         ('First',           'First'),
     ]
 
-    # Miles awarded per kelas kabin (placeholder — update when spec is available)
+    # Miles awarded per kelas kabin (placeholder)
     MILES_PER_KELAS = {
         'Economy':         500,
+         'Premium Economy':750,
         'Business':        1000,
         'First':           1500,
     }
@@ -327,7 +329,7 @@ class Redeem(models.Model):
                         db_column='email_member',
                         related_name='redeems'
                     )
-    id_hadiah    = models.CharField(max_length=20)
+    kode_hadiah = models.CharField(max_length=20, db_column='kode_hadiah')
     timestamp    = models.DateTimeField(default=timezone.now) #Primary Key
     status       = models.CharField(max_length=20, default='Menunggu')
 

@@ -153,9 +153,9 @@ def get_staf_claim_stats(email):
     """Return claim statistics for a staff member."""
     sql = """
         SELECT 
-            COUNT(CASE WHEN status = 'Menunggu' THEN 1 END) as pending,
-            COUNT(CASE WHEN status = 'Disetujui' THEN 1 END) as approved,
-            COUNT(CASE WHEN status = 'Ditolak' THEN 1 END) as rejected
+            COUNT(CASE WHEN status_penerimaan = 'Menunggu' THEN 1 END) as pending,
+            COUNT(CASE WHEN status_penerimaan = 'Disetujui' THEN 1 END) as approved,
+            COUNT(CASE WHEN status_penerimaan = 'Ditolak' THEN 1 END) as rejected
         FROM CLAIM_MISSING_MILES
         WHERE email_staf = %s
     """

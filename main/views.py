@@ -221,6 +221,12 @@ def login(request):
     return render(request, 'login.html', {'navbar_type': 'guest'})
 
 
+def logout(request):
+    request.session.flush()
+    messages.success(request, 'Anda telah logout.')
+    return redirect('main:login')
+
+
 def register(request):
     if request.method == 'POST':
         role = request.POST.get('role', 'member')

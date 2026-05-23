@@ -119,8 +119,8 @@ def get_member(request):
                p.country_code, p.mobile_number,
                p.tanggal_lahir, p.kewarganegaraan,
                m.email AS email_id
-        FROM MEMBER m
-        JOIN PENGGUNA p ON m.email = p.email
+        FROM member m
+        JOIN pengguna p ON m.email = p.email
         WHERE m.email = %s
     """
     rows = execute_raw_sql(sql, [email])
@@ -142,9 +142,9 @@ def get_staf(request):
                p.country_code, p.mobile_number,
                p.tanggal_lahir, p.kewarganegaraan,
                s.email AS email_id
-        FROM STAF s
-        JOIN PENGGUNA p ON s.email = p.email
-        JOIN MASKAPAI m ON s.kode_maskapai = m.kode_maskapai
+        FROM staf s
+        JOIN pengguna p ON s.email = p.email
+        JOIN maskapai m ON s.kode_maskapai = m.kode_maskapai
         WHERE s.email = %s
     """
     rows = execute_raw_sql(sql, [email])
@@ -171,7 +171,7 @@ def login_required_staff(view_func):
     return wrapper
 
 
-# ===== MEMBER IDENTITY MANAGEMENT (Member) =====
+# ===== Member Identity Management (Member) =====
 
 @login_required_member
 def page_view(request):
@@ -189,7 +189,7 @@ def page_view(request):
                 WHEN tanggal_habis >= CURDATE() THEN 'Aktif'
                 ELSE 'Kedaluwarsa'
             END as status
-        FROM IDENTITAS_MEMBER
+        FROM identitas_member
         WHERE email_member = %s
         ORDER BY tanggal_terbit DESC
     """
@@ -225,7 +225,7 @@ def form_view_member(request):
         
         try:
             sql = """
-                INSERT INTO IDENTITAS_MEMBER 
+                INSERT INTO identitas_member
                 (email_member, nomor_dokumen, jenis_dokumen, negara, tanggal_terbit, tanggal_habis)
                 VALUES (%s, %s, %s, %s, %s, %s)
             """
@@ -257,7 +257,7 @@ def edit_view_member(request, id):
     """U — Update member identity."""
     member = get_member(request)
     
-    sql = "SELECT * FROM IDENTITAS_MEMBER WHERE nomor_dokumen = %s AND email_member = %s"
+    sql = "SELECT * FROM identitas_member WHERE nomor_dokumen = %s AND email_member = %s"
     identities = execute_raw_sql(sql, [id, member.email_id])
     
     if not identities:
@@ -279,7 +279,7 @@ def edit_view_member(request, id):
         
         try:
             sql = """
-                UPDATE IDENTITAS_MEMBER
+                UPDATE identitas_member
                 SET jenis_dokumen = %s, negara = %s, tanggal_terbit = %s, tanggal_habis = %s
                 WHERE nomor_dokumen = %s AND email_member = %s
             """
@@ -298,7 +298,7 @@ def edit_view_member(request, id):
     return render(request, 'member/form_edit_member.html', context)
 
 
-# ===== MEMBER DATA MANAGEMENT (Staff) =====
+# ===== Member Data Management (Staff) =====
 
 @login_required_staff
 def staff_page_view(request):
@@ -315,9 +315,9 @@ def staff_page_view(request):
             m.total_miles,
             m.award_miles,
             m.tanggal_bergabung
-        FROM MEMBER m
-        JOIN PENGGUNA p ON m.email = p.email
-        JOIN TIER t ON m.id_tier = t.id_tier
+        FROM member m
+        JOIN pengguna p ON m.email = p.email
+        JOIN tier t ON m.id_tier = t.id_tier
         ORDER BY m.tanggal_bergabung DESC
     """
     
@@ -362,7 +362,7 @@ def form_view_staff(request):
         
         try:
             sql_pengguna = """
-                INSERT INTO PENGGUNA 
+                INSERT INTO pengguna
                 (email, password, salutation, first_mid_name, last_name, country_code, mobile_number, tanggal_lahir, kewarganegaraan)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
@@ -373,7 +373,7 @@ def form_view_staff(request):
             ])
             
             sql_member = """
-                INSERT INTO MEMBER 
+                INSERT INTO member
                 (email, nomor_member, tanggal_bergabung, id_tier, award_miles, total_miles)
                 VALUES (%s, %s, %s, %s, 0, 0)
             """
@@ -389,7 +389,7 @@ def form_view_staff(request):
             messages.error(request, f'Terjadi kesalahan: {str(e)}')
             return render(request, 'member/form_create_staff.html', {'navbar_type': 'staff', 'staf': staf})
     
-    sql_tiers = "SELECT id_tier, nama FROM TIER ORDER BY nama"
+    sql_tiers = "SELECT id_tier, nama FROM tier ORDER BY nama"
     tiers = execute_raw_sql(sql_tiers)
     
     context = {
@@ -420,8 +420,8 @@ def edit_view_staff(request, id):
             m.id_tier,
             m.total_miles,
             m.award_miles
-        FROM MEMBER m
-        JOIN PENGGUNA p ON m.email = p.email
+        FROM member m
+        JOIN pengguna p ON m.email = p.email
         WHERE m.email = %s
     """
     
@@ -452,7 +452,7 @@ def edit_view_staff(request, id):
         
         try:
             sql_update = """
-                UPDATE PENGGUNA
+                UPDATE pengguna
                 SET salutation = %s, first_mid_name = %s, last_name = %s,
                     country_code = %s, mobile_number = %s, tanggal_lahir = %s, kewarganegaraan = %s
                 WHERE email = %s
@@ -463,7 +463,7 @@ def edit_view_staff(request, id):
                 nomor_hp, tanggal_lahir, kewarganegaraan, id
             ])
             
-            sql_tier = "UPDATE MEMBER SET id_tier = %s WHERE email = %s"
+            sql_tier = "UPDATE member SET id_tier = %s WHERE email = %s"
             execute_raw_sql_update(sql_tier, [tier, id])
             
             messages.success(request, f'Data member {id} berhasil diperbarui.')
@@ -472,7 +472,7 @@ def edit_view_staff(request, id):
         except Exception as e:
             messages.error(request, f'Terjadi kesalahan: {str(e)}')
     
-    sql_tiers = "SELECT id_tier, nama FROM TIER ORDER BY nama"
+    sql_tiers = "SELECT id_tier, nama FROM tier ORDER BY nama"
     tiers = execute_raw_sql(sql_tiers)
     
     context = {
@@ -484,7 +484,7 @@ def edit_view_staff(request, id):
     return render(request, 'member/form_edit_staff.html', context)
 
 
-# ===== MEMBER IDENTITY MANAGEMENT (Member) =====
+# ===== Member Identity Management (Member) =====
 
 @login_required_member
 def page_view(request):
@@ -503,7 +503,7 @@ def page_view(request):
                 WHEN tanggal_habis >= CURDATE() THEN 'Aktif'
                 ELSE 'Kedaluwarsa'
             END as status
-        FROM IDENTITAS_MEMBER
+        FROM identitas_member
         WHERE email_member = %s
         ORDER BY tanggal_terbit DESC
     """
@@ -540,7 +540,7 @@ def form_view_member(request):
         
         try:
             sql = """
-                INSERT INTO IDENTITAS_MEMBER 
+                INSERT INTO identitas_member
                 (email_member, nomor_dokumen, jenis_dokumen, negara, tanggal_terbit, tanggal_habis)
                 VALUES (%s, %s, %s, %s, %s, %s)
             """
@@ -573,7 +573,7 @@ def edit_view_member(request, id):
     member = get_member(request)
     
     # Fetch identity
-    sql = "SELECT * FROM IDENTITAS_MEMBER WHERE nomor_dokumen = %s AND email_member = %s"
+    sql = "SELECT * FROM identitas_member WHERE nomor_dokumen = %s AND email_member = %s"
     identities = execute_raw_sql(sql, [id, member.email_id])
     
     if not identities:
@@ -595,7 +595,7 @@ def edit_view_member(request, id):
         
         try:
             sql = """
-                UPDATE IDENTITAS_MEMBER
+                UPDATE identitas_member
                 SET jenis_dokumen = %s, negara = %s, tanggal_terbit = %s, tanggal_habis = %s
                 WHERE nomor_dokumen = %s AND email_member = %s
             """
@@ -614,7 +614,7 @@ def edit_view_member(request, id):
     return render(request, 'member/form_edit_member.html', context)
 
 
-# ===== MEMBER DATA MANAGEMENT (Staff) =====
+# ===== Member Data Management (Staff) =====
 
 @login_required_staff
 def staff_page_view(request):
@@ -632,9 +632,9 @@ def staff_page_view(request):
             m.total_miles,
             m.award_miles,
             m.tanggal_bergabung
-        FROM MEMBER m
-        JOIN PENGGUNA p ON m.email = p.email
-        JOIN TIER t ON m.id_tier = t.id_tier
+        FROM member m
+        JOIN pengguna p ON m.email = p.email
+        JOIN tier t ON m.id_tier = t.id_tier
         ORDER BY m.tanggal_bergabung DESC
     """
     
@@ -679,9 +679,9 @@ def form_view_staff(request):
             return render(request, 'member/form_create_staff.html', {'navbar_type': 'staff', 'staf': staf})
         
         try:
-            # Create PENGGUNA
+            # Create pengguna
             sql_pengguna = """
-                INSERT INTO PENGGUNA 
+                INSERT INTO pengguna
                 (email, password, salutation, first_mid_name, last_name, country_code, mobile_number, tanggal_lahir, kewarganegaraan)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
@@ -691,9 +691,9 @@ def form_view_staff(request):
                 country_code, nomor_hp, tanggal_lahir, kewarganegaraan
             ])
             
-            # Create MEMBER
+            # Create member
             sql_member = """
-                INSERT INTO MEMBER 
+                INSERT INTO member
                 (email, nomor_member, tanggal_bergabung, id_tier, award_miles, total_miles)
                 VALUES (%s, %s, %s, %s, 0, 0)
             """
@@ -710,7 +710,7 @@ def form_view_staff(request):
             return render(request, 'member/form_create_staff.html', {'navbar_type': 'staff', 'staf': staf})
     
     # Fetch tiers
-    sql_tiers = "SELECT id_tier, nama FROM TIER ORDER BY nama"
+    sql_tiers = "SELECT id_tier, nama FROM tier ORDER BY nama"
     tiers = execute_raw_sql(sql_tiers)
     
     context = {
@@ -742,8 +742,8 @@ def edit_view_staff(request, id):
             m.id_tier,
             m.total_miles,
             m.award_miles
-        FROM MEMBER m
-        JOIN PENGGUNA p ON m.email = p.email
+        FROM member m
+        JOIN pengguna p ON m.email = p.email
         WHERE m.email = %s
     """
     
@@ -773,9 +773,9 @@ def edit_view_staff(request, id):
             return render(request, 'member/form_edit_staff.html', context)
         
         try:
-            # Update PENGGUNA
+            # Update pengguna
             sql_update = """
-                UPDATE PENGGUNA
+                UPDATE pengguna
                 SET salutation = %s, first_mid_name = %s, last_name = %s,
                     country_code = %s, mobile_number = %s, tanggal_lahir = %s, kewarganegaraan = %s
                 WHERE email = %s
@@ -786,8 +786,8 @@ def edit_view_staff(request, id):
                 nomor_hp, tanggal_lahir, kewarganegaraan, id
             ])
             
-            # Update MEMBER tier
-            sql_tier = "UPDATE MEMBER SET id_tier = %s WHERE email = %s"
+            # Update member tier
+            sql_tier = "UPDATE member SET id_tier = %s WHERE email = %s"
             execute_raw_sql_update(sql_tier, [tier, id])
             
             messages.success(request, f'Data member {id} berhasil diperbarui.')
@@ -797,7 +797,7 @@ def edit_view_staff(request, id):
             messages.error(request, f'Terjadi kesalahan: {str(e)}')
     
     # Fetch tiers
-    sql_tiers = "SELECT id_tier, nama FROM TIER ORDER BY nama"
+    sql_tiers = "SELECT id_tier, nama FROM tier ORDER BY nama"
     tiers = execute_raw_sql(sql_tiers)
     
     context = {

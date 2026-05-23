@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
                 ('negara', models.CharField(max_length=100)),
             ],
             options={
-                'db_table': 'BANDARA',
+                'db_table': 'bandara',
             },
         ),
         migrations.CreateModel(
@@ -39,7 +39,7 @@ class Migration(migrations.Migration):
                 ('kewarganegaraan', models.CharField(max_length=50)),
             ],
             options={
-                'db_table': 'PENGGUNA',
+                'db_table': 'pengguna',
             },
         ),
         migrations.CreateModel(
@@ -48,7 +48,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(primary_key=True, serialize=False)),
             ],
             options={
-                'db_table': 'PENYEDIA',
+                'db_table': 'penyedia',
             },
         ),
         migrations.CreateModel(
@@ -60,7 +60,7 @@ class Migration(migrations.Migration):
                 ('minimal_tier_miles', models.IntegerField()),
             ],
             options={
-                'db_table': 'TIER',
+                'db_table': 'tier',
             },
         ),
         migrations.CreateModel(
@@ -71,7 +71,7 @@ class Migration(migrations.Migration):
                 ('id_penyedia', models.ForeignKey(db_column='id_penyedia', on_delete=django.db.models.deletion.PROTECT, to='green.penyedia')),
             ],
             options={
-                'db_table': 'MASKAPAI',
+                'db_table': 'maskapai',
             },
         ),
         migrations.CreateModel(
@@ -85,7 +85,7 @@ class Migration(migrations.Migration):
                 ('id_tier', models.ForeignKey(db_column='id_tier', on_delete=django.db.models.deletion.PROTECT, to='green.tier')),
             ],
             options={
-                'db_table': 'MEMBER',
+                'db_table': 'member',
             },
         ),
         migrations.CreateModel(
@@ -96,7 +96,7 @@ class Migration(migrations.Migration):
                 ('kode_maskapai', models.ForeignKey(db_column='kode_maskapai', on_delete=django.db.models.deletion.PROTECT, to='green.maskapai')),
             ],
             options={
-                'db_table': 'STAF',
+                'db_table': 'staf',
             },
         ),
         migrations.CreateModel(
@@ -117,7 +117,7 @@ class Migration(migrations.Migration):
                 ('email_staf', models.ForeignKey(blank=True, db_column='email_staf', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='handled_claims', to='green.staf')),
             ],
             options={
-                'db_table': 'CLAIM_MISSING_MILES',
+                'db_table': 'claim_missing_miles',
                 'unique_together': {('email_member', 'flight_number', 'tanggal_penerbangan', 'nomor_tiket')},
             },
         ),

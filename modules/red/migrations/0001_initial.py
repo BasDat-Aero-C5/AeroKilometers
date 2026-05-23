@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
                 ('id_penyedia', models.OneToOneField(db_column='id_penyedia', on_delete=django.db.models.deletion.CASCADE, related_name='mitra', to='green.penyedia')),
             ],
             options={
-                'db_table': 'MITRA',
+                'db_table': 'mitra',
             },
         ),
         migrations.CreateModel(
@@ -37,7 +37,7 @@ class Migration(migrations.Migration):
                 ('id_penyedia', models.ForeignKey(db_column='id_penyedia', on_delete=django.db.models.deletion.CASCADE, related_name='hadiah', to='green.penyedia')),
             ],
             options={
-                'db_table': 'HADIAH',
+                'db_table': 'hadiah',
             },
         ),
     ]

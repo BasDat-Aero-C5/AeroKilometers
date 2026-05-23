@@ -21,7 +21,7 @@ class Pengguna(models.Model): #1
 
     class Meta:
         managed = False
-        db_table = 'PENGGUNA'
+        db_table = 'pengguna'
 
     def __str__(self):
         return self.email
@@ -35,7 +35,7 @@ class Tier(models.Model): #2
 
     class Meta:
         managed = False
-        db_table = 'TIER'
+        db_table = 'tier'
 
     def __str__(self):
         return self.nama
@@ -60,7 +60,7 @@ class Member(models.Model): #3
 
     class Meta:
         managed = False
-        db_table = 'MEMBER'
+        db_table = 'member'
 
     def __str__(self):
         return f"{self.nomor_member} - {self.email_id}"
@@ -71,7 +71,7 @@ class Penyedia(models.Model): #4, (Provider)
 
     class Meta:
         managed = False
-        db_table = 'PENYEDIA'
+        db_table = 'penyedia'
 
     def __str__(self):
         return f"Penyedia {self.id}"
@@ -88,7 +88,7 @@ class Maskapai(models.Model): #5, (Airline)
 
     class Meta:
         managed = False
-        db_table = 'MASKAPAI'
+        db_table = 'maskapai'
 
     def __str__(self):
         return f"{self.kode_maskapai} - {self.nama_maskapai}"
@@ -110,7 +110,7 @@ class Staf(models.Model): #6, (Staff)
 
     class Meta:
         managed = False
-        db_table = 'STAF'
+        db_table = 'staf'
 
     def __str__(self):
         return f"{self.id_staf} - {self.email_id}"
@@ -127,7 +127,7 @@ class Mitra(models.Model): #7, (Partner)
 
     class Meta:
         managed = False
-        db_table = 'MITRA'
+        db_table = 'mitra'
 
     def __str__(self):
         return f"{self.id_mitra} - {self.nama}"
@@ -147,7 +147,7 @@ class Identitas(models.Model): #8, (Identity)
 
     class Meta:
         managed = False
-        db_table = 'IDENTITAS'
+        db_table = 'identitas'
 
     def __str__(self):
         return f"{self.nomor} - {self.email_member_id}"
@@ -159,7 +159,7 @@ class AwardMilesPackage(models.Model): #9, (Miles Package)
 
     class Meta:
         managed = False
-        db_table = 'AWARD_MILES_PACKAGE'
+        db_table = 'award_miles_package'
 
     def __str__(self):
         return f"{self.id_package} - {self.nama} | {self.jumlah_miles} miles for ${self.harga}"
@@ -180,7 +180,7 @@ class MemberAwardMilesPackage(models.Model): #10, (Member's Purchased Miles Pack
 
     class Meta:
         managed = False
-        db_table = 'MEMBER_AWARD_MILES_PACKAGE'
+        db_table = 'member_award_miles_package'
         unique_together = [['email_member', 'id_package', 'timestamp']]
 
     def __str__(self):
@@ -194,7 +194,7 @@ class Bandara(models.Model): #10, (Airport)
 
     class Meta:
         managed = False
-        db_table = 'BANDARA'
+        db_table = 'bandara'
 
     def __str__(self):
         return f"{self.iata_code} - {self.nama}"
@@ -265,7 +265,7 @@ class ClaimMissingMiles(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'CLAIM_MISSING_MILES'
+        db_table = 'claim_missing_miles'
         # Prevent duplicate claims
         unique_together = [['email_member', 'flight_number', 'tanggal_penerbangan', 'nomor_tiket']]
 
@@ -296,7 +296,7 @@ class Transfer(models.Model): #13
 
     class Meta:
         managed = False
-        db_table = 'TRANSFER'
+        db_table = 'transfer'
         unique_together = [['email_member_1', 'email_member_2', 'timestamp']]
 
     def __str__(self):
@@ -317,7 +317,7 @@ class Hadiah(models.Model): #14, (Reward)
     
     class Meta:
         managed = False
-        db_table = 'HADIAH'
+        db_table = 'hadiah'
 
     def __str__(self):
         return f"{self.id_hadiah} - {self.nama} | {self.jumlah_miles} miles | Stock: {self.stok}"
@@ -335,7 +335,7 @@ class Redeem(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'REDEEM'
+        db_table = 'redeem'
 
     def __str__(self):
         return f"Redeem {self.id} | {self.email_member_id} | {self.id_hadiah} | {self.status}"

@@ -118,8 +118,8 @@ def get_member(request):
                p.country_code, p.mobile_number,
                p.tanggal_lahir, p.kewarganegaraan,
                m.email AS email_id
-        FROM MEMBER m
-        JOIN PENGGUNA p ON m.email = p.email
+        FROM member m
+        JOIN pengguna p ON m.email = p.email
         WHERE m.email = %s
     """
     rows = execute_raw_sql(sql, [email])
@@ -141,9 +141,9 @@ def get_staf(request):
                p.country_code, p.mobile_number,
                p.tanggal_lahir, p.kewarganegaraan,
                s.email AS email_id
-        FROM STAF s
-        JOIN PENGGUNA p ON s.email = p.email
-        JOIN MASKAPAI m ON s.kode_maskapai = m.kode_maskapai
+        FROM staf s
+        JOIN pengguna p ON s.email = p.email
+        JOIN maskapai m ON s.kode_maskapai = m.kode_maskapai
         WHERE s.email = %s
     """
     rows = execute_raw_sql(sql, [email])
@@ -170,7 +170,7 @@ def login_required_staff(view_func):
     return wrapper
 
 
-# ===== REWARDS REDEEM (Member) =====
+# ===== Rewards Redeem (Member) =====
 
 @login_required_member
 def redeem_hadiah(request):
@@ -187,7 +187,7 @@ def redeem_hadiah(request):
             tanggal_mulai,
             tanggal_berakhir,
             id_penyedia
-        FROM HADIAH
+        FROM hadiah
         WHERE tanggal_mulai <= CURDATE() AND tanggal_berakhir >= CURDATE()
         ORDER BY tanggal_mulai DESC
     """
@@ -200,8 +200,8 @@ def redeem_hadiah(request):
             h.nama_hadiah,
             rh.tanggal_redeem as tanggal,
             h.harga_miles as miles
-        FROM RIWAYAT_REDEEM rh
-        JOIN HADIAH h ON rh.kode_hadiah = h.kode_hadiah
+        FROM riwayat_redeem rh
+        JOIN hadiah h ON rh.kode_hadiah = h.kode_hadiah
         WHERE rh.email_member = %s
         ORDER BY rh.tanggal_redeem DESC
         LIMIT 20
@@ -231,7 +231,7 @@ def redeem_confirm(request):
         messages.error(request, 'Kode hadiah tidak valid.')
         return redirect('blue:redeem_hadiah')
     
-    sql = "SELECT * FROM HADIAH WHERE kode_hadiah = %s"
+    sql = "SELECT * FROM hadiah WHERE kode_hadiah = %s"
     hadiaha_list = execute_raw_sql(sql, [kode_hadiah])
     
     if not hadiaha_list:
@@ -247,13 +247,13 @@ def redeem_confirm(request):
     
     try:
         sql_redeem = """
-            INSERT INTO RIWAYAT_REDEEM (email_member, kode_hadiah, tanggal_redeem)
+            INSERT INTO riwayat_redeem (email_member, kode_hadiah, tanggal_redeem)
             VALUES (%s, %s, %s)
         """
         execute_raw_sql_update(sql_redeem, [member.email_id, kode_hadiah, timezone.now()])
         
         member.award_miles -= harga_miles
-        sql_update_miles = "UPDATE MEMBER SET award_miles = award_miles - %s WHERE email = %s"
+        sql_update_miles = "UPDATE member SET award_miles = award_miles - %s WHERE email = %s"
         execute_raw_sql_update(sql_update_miles, [harga_miles, member.email_id])
         
         messages.success(request, f'Hadiah berhasil ditukar. {harga_miles} award miles dikurangi dari akun Anda.')
@@ -309,7 +309,7 @@ def buy_package(request):
     
     try:
         sql_purchase = """
-            INSERT INTO PEMBELIAN_MILES (email_member, kode_package, jumlah_miles, tanggal_pembelian)
+            INSERT INTO pembelian_miles (email_member, kode_package, jumlah_miles, tanggal_pembelian)
             VALUES (%s, %s, %s, %s)
         """
         execute_raw_sql_update(sql_purchase, [
@@ -318,7 +318,7 @@ def buy_package(request):
         
         member.award_miles += package['miles']
         member.total_miles += package['miles']
-        sql_update_miles = "UPDATE MEMBER SET award_miles = award_miles + %s, total_miles = total_miles + %s WHERE email = %s"
+        sql_update_miles = "UPDATE member SET award_miles = award_miles + %s, total_miles = total_miles + %s WHERE email = %s"
         execute_raw_sql_update(sql_update_miles, [package['miles'], package['miles'], member.email_id])
         
         messages.success(request, f'Paket {package["miles"]} miles berhasil dibeli!')
@@ -329,7 +329,7 @@ def buy_package(request):
     return redirect('blue:package_list')
 
 
-# ===== TIER INFORMATION (Member) =====
+# ===== Tier Information (Member) =====
 
 @login_required_member
 def tier_info(request):
@@ -342,7 +342,7 @@ def tier_info(request):
             nama as tier_name,
             minimal_frekuensi_terbang,
             minimal_tier_miles
-        FROM TIER
+        FROM tier
         ORDER BY minimal_tier_miles ASC
     """
     
@@ -350,7 +350,7 @@ def tier_info(request):
     
     sql_member_tier = """
         SELECT t.id_tier, t.nama as tier_name
-        FROM TIER t
+        FROM tier t
         WHERE t.id_tier = %s
     """
     
@@ -384,7 +384,7 @@ def report_view(request):
             kode_hadiah as reference,
             -harga_miles as miles,
             tanggal_redeem as tanggal
-        FROM RIWAYAT_REDEEM
+        FROM riwayat_redeem
         WHERE 1=1
     """
     
@@ -407,7 +407,7 @@ def report_view(request):
                 email_member_2 as reference,
                 -jumlah as miles,
                 timestamp as tanggal
-            FROM TRANSFER
+            FROM transfer
             WHERE 1=1
         """
         if start_date:
@@ -425,7 +425,7 @@ def report_view(request):
         SELECT 
             COUNT(*) as total_transactions,
             SUM(CASE WHEN tanggal_redeem IS NOT NULL THEN 1 ELSE 0 END) as total_redeems
-        FROM RIWAYAT_REDEEM
+        FROM riwayat_redeem
     """
     
     summary_list = execute_raw_sql(sql_summary)
@@ -443,7 +443,7 @@ def report_view(request):
     return render(request, 'transfer/report.html', context)
 
 
-# ===== REWARDS REDEEM (Member) =====
+# ===== Rewards Redeem (Member) =====
 
 @login_required_member
 def redeem_hadiah(request):
@@ -461,7 +461,7 @@ def redeem_hadiah(request):
             tanggal_mulai,
             tanggal_berakhir,
             id_penyedia
-        FROM HADIAH
+        FROM hadiah
         WHERE tanggal_mulai <= CURDATE() AND tanggal_berakhir >= CURDATE()
         ORDER BY tanggal_mulai DESC
     """
@@ -475,8 +475,8 @@ def redeem_hadiah(request):
             h.nama_hadiah,
             rh.tanggal_redeem as tanggal,
             h.harga_miles as miles
-        FROM RIWAYAT_REDEEM rh
-        JOIN HADIAH h ON rh.kode_hadiah = h.kode_hadiah
+        FROM riwayat_redeem rh
+        JOIN hadiah h ON rh.kode_hadiah = h.kode_hadiah
         WHERE rh.email_member = %s
         ORDER BY rh.tanggal_redeem DESC
         LIMIT 20
@@ -507,7 +507,7 @@ def redeem_confirm(request):
         return redirect('blue:redeem_hadiah')
     
     # Fetch hadiah details
-    sql = "SELECT * FROM HADIAH WHERE kode_hadiah = %s"
+    sql = "SELECT * FROM hadiah WHERE kode_hadiah = %s"
     hadiaha_list = execute_raw_sql(sql, [kode_hadiah])
     
     if not hadiaha_list:
@@ -525,14 +525,14 @@ def redeem_confirm(request):
     try:
         # Record redemption
         sql_redeem = """
-            INSERT INTO RIWAYAT_REDEEM (email_member, kode_hadiah, tanggal_redeem)
+            INSERT INTO riwayat_redeem (email_member, kode_hadiah, tanggal_redeem)
             VALUES (%s, %s, %s)
         """
         execute_raw_sql_update(sql_redeem, [member.email_id, kode_hadiah, timezone.now()])
         
         # Deduct award miles
         member.award_miles -= harga_miles
-        sql_update_miles = "UPDATE MEMBER SET award_miles = award_miles - %s WHERE email = %s"
+        sql_update_miles = "UPDATE member SET award_miles = award_miles - %s WHERE email = %s"
         execute_raw_sql_update(sql_update_miles, [harga_miles, member.email_id])
         
         messages.success(request, f'Hadiah berhasil ditukar. {harga_miles} award miles dikurangi dari akun Anda.')
@@ -591,7 +591,7 @@ def buy_package(request):
     try:
         # Record purchase
         sql_purchase = """
-            INSERT INTO PEMBELIAN_MILES (email_member, kode_package, jumlah_miles, tanggal_pembelian)
+            INSERT INTO pembelian_miles (email_member, kode_package, jumlah_miles, tanggal_pembelian)
             VALUES (%s, %s, %s, %s)
         """
         execute_raw_sql_update(sql_purchase, [
@@ -601,7 +601,7 @@ def buy_package(request):
         # Add award miles
         member.award_miles += package['miles']
         member.total_miles += package['miles']
-        sql_update_miles = "UPDATE MEMBER SET award_miles = award_miles + %s, total_miles = total_miles + %s WHERE email = %s"
+        sql_update_miles = "UPDATE member SET award_miles = award_miles + %s, total_miles = total_miles + %s WHERE email = %s"
         execute_raw_sql_update(sql_update_miles, [package['miles'], package['miles'], member.email_id])
         
         messages.success(request, f'Paket {package["miles"]} miles berhasil dibeli!')
@@ -612,7 +612,7 @@ def buy_package(request):
     return redirect('blue:package_list')
 
 
-# ===== TIER INFORMATION (Member) =====
+# ===== Tier Information (Member) =====
 
 @login_required_member
 def tier_info(request):
@@ -626,7 +626,7 @@ def tier_info(request):
             nama as tier_name,
             minimal_frekuensi_terbang,
             minimal_tier_miles
-        FROM TIER
+        FROM tier
         ORDER BY minimal_tier_miles ASC
     """
     
@@ -635,7 +635,7 @@ def tier_info(request):
     # Get current member tier
     sql_member_tier = """
         SELECT t.id_tier, t.nama as tier_name
-        FROM TIER t
+        FROM tier t
         WHERE t.id_tier = %s
     """
     
@@ -671,7 +671,7 @@ def report_view(request):
             kode_hadiah as reference,
             -harga_miles as miles,
             tanggal_redeem as tanggal
-        FROM RIWAYAT_REDEEM
+        FROM riwayat_redeem
         WHERE 1=1
     """
     
@@ -695,7 +695,7 @@ def report_view(request):
                 email_member_2 as reference,
                 -jumlah as miles,
                 timestamp as tanggal
-            FROM TRANSFER
+            FROM transfer
             WHERE 1=1
         """
         if start_date:
@@ -714,7 +714,7 @@ def report_view(request):
         SELECT 
             COUNT(*) as total_transactions,
             SUM(CASE WHEN tanggal_redeem IS NOT NULL THEN 1 ELSE 0 END) as total_redeems
-        FROM RIWAYAT_REDEEM
+        FROM riwayat_redeem
     """
     
     summary_list = execute_raw_sql(sql_summary)

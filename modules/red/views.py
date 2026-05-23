@@ -116,9 +116,9 @@ def get_staf(request):
                p.country_code, p.mobile_number,
                p.tanggal_lahir, p.kewarganegaraan,
                s.email AS email_id
-        FROM STAF s
-        JOIN PENGGUNA p ON s.email = p.email
-        JOIN MASKAPAI m ON s.kode_maskapai = m.kode_maskapai
+        FROM staf s
+        JOIN pengguna p ON s.email = p.email
+        JOIN maskapai m ON s.kode_maskapai = m.kode_maskapai
         WHERE s.email = %s
     """
     rows = execute_raw_sql(sql, [email])
@@ -151,7 +151,7 @@ def daftar_hadiah(request):
             tanggal_mulai,
             tanggal_berakhir,
             id_penyedia
-        FROM HADIAH
+        FROM hadiah
         ORDER BY tanggal_mulai DESC
     """
     
@@ -195,7 +195,7 @@ def tambah_hadiah(request):
             kode_hadiah = f"RWD-{int(timezone.now().timestamp()) % 10000:04d}"
             
             sql = """
-                INSERT INTO HADIAH 
+                INSERT INTO hadiah
                 (kode_hadiah, nama_hadiah, harga_miles, deskripsi, id_penyedia, tanggal_mulai, tanggal_berakhir)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             """
@@ -212,7 +212,7 @@ def tambah_hadiah(request):
             messages.error(request, f'Terjadi kesalahan: {str(e)}')
             return render(request, 'hadiah/tambah_hadiah.html', {'navbar_type': 'staff', 'staf': staf})
     
-    sql_providers = "SELECT id_penyedia, nama_penyedia FROM PENYEDIA ORDER BY nama_penyedia"
+    sql_providers = "SELECT id_penyedia, nama_penyedia FROM penyedia ORDER BY nama_penyedia"
     providers = execute_raw_sql(sql_providers)
     
     context = {
@@ -230,7 +230,7 @@ def edit_hadiah(request):
     staf = get_staf(request)
     kode_hadiah = request.GET.get('kode') or request.POST.get('kode_hadiah')
     
-    sql = "SELECT * FROM HADIAH WHERE kode_hadiah = %s"
+    sql = "SELECT * FROM hadiah WHERE kode_hadiah = %s"
     rewards = execute_raw_sql(sql, [kode_hadiah])
     
     if not rewards:
@@ -262,7 +262,7 @@ def edit_hadiah(request):
         
         try:
             sql = """
-                UPDATE HADIAH
+                UPDATE hadiah
                 SET nama_hadiah = %s, harga_miles = %s, deskripsi = %s, 
                     id_penyedia = %s, tanggal_berakhir = %s
                 WHERE kode_hadiah = %s
@@ -278,7 +278,7 @@ def edit_hadiah(request):
         except Exception as e:
             messages.error(request, f'Terjadi kesalahan: {str(e)}')
     
-    sql_providers = "SELECT id_penyedia, nama_penyedia FROM PENYEDIA ORDER BY nama_penyedia"
+    sql_providers = "SELECT id_penyedia, nama_penyedia FROM penyedia ORDER BY nama_penyedia"
     providers = execute_raw_sql(sql_providers)
     
     context = {
@@ -302,7 +302,7 @@ def hapus_hadiah(request):
         return redirect('red:daftar_hadiah')
     
     try:
-        sql = "DELETE FROM HADIAH WHERE kode_hadiah = %s"
+        sql = "DELETE FROM hadiah WHERE kode_hadiah = %s"
         execute_raw_sql_update(sql, [kode_hadiah])
         messages.success(request, 'Hadiah berhasil dihapus.')
     except Exception as e:
@@ -324,7 +324,7 @@ def daftar_mitra(request):
             nama_penyedia,
             email_penyedia,
             tanggal_kerja_sama
-        FROM PENYEDIA
+        FROM penyedia
         ORDER BY tanggal_kerja_sama DESC
     """
     
@@ -359,7 +359,7 @@ def tambah_mitra(request):
         
         try:
             sql = """
-                INSERT INTO PENYEDIA 
+                INSERT INTO penyedia
                 (nama_penyedia, email_penyedia, tanggal_kerja_sama)
                 VALUES (%s, %s, %s)
             """
@@ -387,7 +387,7 @@ def edit_mitra(request):
     staf = get_staf(request)
     id_penyedia = request.GET.get('id') or request.POST.get('id_penyedia')
     
-    sql = "SELECT * FROM PENYEDIA WHERE id_penyedia = %s"
+    sql = "SELECT * FROM penyedia WHERE id_penyedia = %s"
     mitras = execute_raw_sql(sql, [id_penyedia])
     
     if not mitras:
@@ -407,7 +407,7 @@ def edit_mitra(request):
         
         try:
             sql = """
-                UPDATE PENYEDIA
+                UPDATE penyedia
                 SET nama_penyedia = %s, tanggal_kerja_sama = %s
                 WHERE id_penyedia = %s
             """
@@ -440,7 +440,7 @@ def hapus_mitra(request):
         return redirect('red:daftar_mitra')
     
     try:
-        sql = "DELETE FROM PENYEDIA WHERE id_penyedia = %s"
+        sql = "DELETE FROM penyedia WHERE id_penyedia = %s"
         execute_raw_sql_update(sql, [id_penyedia])
         messages.success(request, 'Mitra berhasil dihapus.')
     except Exception as e:
@@ -466,7 +466,7 @@ def daftar_hadiah(request):
             tanggal_mulai,
             tanggal_berakhir,
             id_penyedia
-        FROM HADIAH
+        FROM hadiah
         ORDER BY tanggal_mulai DESC
     """
     
@@ -512,7 +512,7 @@ def tambah_hadiah(request):
             kode_hadiah = f"RWD-{int(timezone.now().timestamp()) % 10000:04d}"
             
             sql = """
-                INSERT INTO HADIAH 
+                INSERT INTO hadiah
                 (kode_hadiah, nama_hadiah, harga_miles, deskripsi, id_penyedia, tanggal_mulai, tanggal_berakhir)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             """
@@ -530,7 +530,7 @@ def tambah_hadiah(request):
             return render(request, 'hadiah/tambah_hadiah.html', {'navbar_type': 'staff', 'staf': staf})
     
     # Fetch providers
-    sql_providers = "SELECT id_penyedia, nama_penyedia FROM PENYEDIA ORDER BY nama_penyedia"
+    sql_providers = "SELECT id_penyedia, nama_penyedia FROM penyedia ORDER BY nama_penyedia"
     providers = execute_raw_sql(sql_providers)
     
     context = {
@@ -549,7 +549,7 @@ def edit_hadiah(request):
     kode_hadiah = request.GET.get('kode') or request.POST.get('kode_hadiah')
     
     # Fetch reward details
-    sql = "SELECT * FROM HADIAH WHERE kode_hadiah = %s"
+    sql = "SELECT * FROM hadiah WHERE kode_hadiah = %s"
     rewards = execute_raw_sql(sql, [kode_hadiah])
     
     if not rewards:
@@ -581,7 +581,7 @@ def edit_hadiah(request):
         
         try:
             sql = """
-                UPDATE HADIAH
+                UPDATE hadiah
                 SET nama_hadiah = %s, harga_miles = %s, deskripsi = %s, 
                     id_penyedia = %s, tanggal_berakhir = %s
                 WHERE kode_hadiah = %s
@@ -598,7 +598,7 @@ def edit_hadiah(request):
             messages.error(request, f'Terjadi kesalahan: {str(e)}')
     
     # Fetch providers
-    sql_providers = "SELECT id_penyedia, nama_penyedia FROM PENYEDIA ORDER BY nama_penyedia"
+    sql_providers = "SELECT id_penyedia, nama_penyedia FROM penyedia ORDER BY nama_penyedia"
     providers = execute_raw_sql(sql_providers)
     
     context = {
@@ -622,7 +622,7 @@ def hapus_hadiah(request):
         return redirect('red:daftar_hadiah')
     
     try:
-        sql = "DELETE FROM HADIAH WHERE kode_hadiah = %s"
+        sql = "DELETE FROM hadiah WHERE kode_hadiah = %s"
         execute_raw_sql_update(sql, [kode_hadiah])
         messages.success(request, 'Hadiah berhasil dihapus.')
     except Exception as e:
@@ -645,7 +645,7 @@ def daftar_mitra(request):
             nama_penyedia,
             email_penyedia,
             tanggal_kerja_sama
-        FROM PENYEDIA
+        FROM penyedia
         ORDER BY tanggal_kerja_sama DESC
     """
     
@@ -682,7 +682,7 @@ def tambah_mitra(request):
         
         try:
             sql = """
-                INSERT INTO PENYEDIA 
+                INSERT INTO penyedia
                 (nama_penyedia, email_penyedia, tanggal_kerja_sama)
                 VALUES (%s, %s, %s)
             """
@@ -711,7 +711,7 @@ def edit_mitra(request):
     id_penyedia = request.GET.get('id') or request.POST.get('id_penyedia')
     
     # Fetch partner details
-    sql = "SELECT * FROM PENYEDIA WHERE id_penyedia = %s"
+    sql = "SELECT * FROM penyedia WHERE id_penyedia = %s"
     mitras = execute_raw_sql(sql, [id_penyedia])
     
     if not mitras:
@@ -731,7 +731,7 @@ def edit_mitra(request):
         
         try:
             sql = """
-                UPDATE PENYEDIA
+                UPDATE penyedia
                 SET nama_penyedia = %s, tanggal_kerja_sama = %s
                 WHERE id_penyedia = %s
             """
@@ -764,7 +764,7 @@ def hapus_mitra(request):
         return redirect('red:daftar_mitra')
     
     try:
-        sql = "DELETE FROM PENYEDIA WHERE id_penyedia = %s"
+        sql = "DELETE FROM penyedia WHERE id_penyedia = %s"
         execute_raw_sql_update(sql, [id_penyedia])
         messages.success(request, 'Mitra berhasil dihapus.')
     except Exception as e:

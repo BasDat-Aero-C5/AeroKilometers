@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
                 ('harga', models.DecimalField(decimal_places=2, max_digits=10)),
             ],
             options={
-                'db_table': 'AWARD_MILES_PACKAGE',
+                'db_table': 'award_miles_package',
                 'managed': False,
             },
         ),
@@ -35,7 +35,7 @@ class Migration(migrations.Migration):
                 ('program_end', models.DateField()),
             ],
             options={
-                'db_table': 'HADIAH',
+                'db_table': 'hadiah',
                 'managed': False,
             },
         ),
@@ -49,7 +49,7 @@ class Migration(migrations.Migration):
                 ('jenis', models.CharField(max_length=30)),
             ],
             options={
-                'db_table': 'IDENTITAS',
+                'db_table': 'identitas',
                 'managed': False,
             },
         ),
@@ -60,7 +60,7 @@ class Migration(migrations.Migration):
                 ('timestamp', models.DateTimeField(default=django.utils.timezone.now)),
             ],
             options={
-                'db_table': 'MEMBER_AWARD_MILES_PACKAGE',
+                'db_table': 'member_award_miles_package',
                 'managed': False,
             },
         ),
@@ -72,7 +72,7 @@ class Migration(migrations.Migration):
                 ('tanggal_kerja_sama', models.DateField()),
             ],
             options={
-                'db_table': 'MITRA',
+                'db_table': 'mitra',
                 'managed': False,
             },
         ),
@@ -85,7 +85,7 @@ class Migration(migrations.Migration):
                 ('status', models.CharField(default='Menunggu', max_length=20)),
             ],
             options={
-                'db_table': 'REDEEM',
+                'db_table': 'redeem',
                 'managed': False,
             },
         ),
@@ -98,7 +98,7 @@ class Migration(migrations.Migration):
                 ('catatan', models.CharField(blank=True, max_length=255, null=True)),
             ],
             options={
-                'db_table': 'TRANSFER',
+                'db_table': 'transfer',
                 'managed': False,
             },
         ),

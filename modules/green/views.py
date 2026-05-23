@@ -130,8 +130,8 @@ def get_member(request):
                p.tanggal_lahir, p.kewarganegaraan,
                p.salutation,
                m.email as email_id
-        FROM MEMBER m
-        JOIN PENGGUNA p ON m.email = p.email
+        FROM member m
+        JOIN pengguna p ON m.email = p.email
         WHERE m.email = %s
     """
     result = execute_raw_sql(sql, [email])
@@ -151,8 +151,8 @@ def get_staf(request):
                p.tanggal_lahir, p.kewarganegaraan,
                p.salutation,
                s.email as email_id
-        FROM STAF s
-        JOIN PENGGUNA p ON s.email = p.email
+        FROM staf s
+        JOIN pengguna p ON s.email = p.email
         WHERE s.email = %s
     """
     result = execute_raw_sql(sql, [email])
@@ -178,29 +178,29 @@ def login_required_staf(view_func):
 
 
 def get_maskapai_list():
-    sql = "SELECT kode_maskapai, nama_maskapai FROM MASKAPAI ORDER BY nama_maskapai"
+    sql = "SELECT kode_maskapai, nama_maskapai FROM maskapai ORDER BY nama_maskapai"
     return execute_raw_sql(sql)
 
 
 def get_bandara_list():
-    sql = "SELECT iata_code, nama, kota, negara FROM BANDARA ORDER BY iata_code"
+    sql = "SELECT iata_code, nama, kota, negara FROM bandara ORDER BY iata_code"
     return execute_raw_sql(sql)
 
 
 def get_maskapai_by_pk(kode_maskapai):
-    sql = "SELECT kode_maskapai, nama_maskapai FROM MASKAPAI WHERE kode_maskapai = %s"
+    sql = "SELECT kode_maskapai, nama_maskapai FROM maskapai WHERE kode_maskapai = %s"
     rows = execute_raw_sql(sql, [kode_maskapai])
     return rows[0] if rows else None
 
 
 def get_bandara_by_pk(iata_code):
-    sql = "SELECT iata_code, nama, kota, negara FROM BANDARA WHERE iata_code = %s"
+    sql = "SELECT iata_code, nama, kota, negara FROM bandara WHERE iata_code = %s"
     rows = execute_raw_sql(sql, [iata_code])
     return rows[0] if rows else None
 
 
 def get_member_by_email(email):
-    sql = "SELECT email, nomor_member, award_miles, total_miles, email as email_id FROM MEMBER WHERE email = %s"
+    sql = "SELECT email, nomor_member, award_miles, total_miles, email as email_id FROM member WHERE email = %s"
     rows = execute_raw_sql(sql, [email])
     return rows[0] if rows else None
 
@@ -208,7 +208,7 @@ def get_member_by_email(email):
 def get_claim_by_pk_and_member(pk, member_email):
     sql = """
         SELECT c.*, c.id as id
-        FROM CLAIM_MISSING_MILES c
+        FROM claim_missing_miles c
         WHERE c.id = %s AND c.email_member = %s
     """
     rows = execute_raw_sql(sql, [pk, member_email])
@@ -216,7 +216,7 @@ def get_claim_by_pk_and_member(pk, member_email):
 
 
 def get_claim_by_pk(pk):
-    sql = "SELECT c.*, c.id as id FROM CLAIM_MISSING_MILES c WHERE c.id = %s"
+    sql = "SELECT c.*, c.id as id FROM claim_missing_miles c WHERE c.id = %s"
     rows = execute_raw_sql(sql, [pk])
     return rows[0] if rows else None
 
@@ -257,10 +257,10 @@ def claim_list(request):
                m.nama_maskapai as maskapai_nama,
                ba.nama as bandara_asal_nama, ba.kota as bandara_asal_kota, ba.negara as bandara_asal_negara,
                bt.nama as bandara_tujuan_nama, bt.kota as bandara_tujuan_kota, bt.negara as bandara_tujuan_negara
-        FROM CLAIM_MISSING_MILES c
-        JOIN MASKAPAI m ON c.maskapai = m.kode_maskapai
-        JOIN BANDARA ba ON c.bandara_asal = ba.iata_code
-        JOIN BANDARA bt ON c.bandara_tujuan = bt.iata_code
+        FROM claim_missing_miles c
+        JOIN maskapai m ON c.maskapai = m.kode_maskapai
+        JOIN bandara ba ON c.bandara_asal = ba.iata_code
+        JOIN bandara bt ON c.bandara_tujuan = bt.iata_code
         WHERE c.email_member = %s
     """
     params = [member.email_id]
@@ -321,7 +321,7 @@ def claim_create(request):
         else:
             try:
                 sql = """
-                    INSERT INTO CLAIM_MISSING_MILES
+                    INSERT INTO claim_missing_miles
                         (email_member, maskapai, bandara_asal, bandara_tujuan,
                          tanggal_penerbangan, flight_number, nomor_tiket,
                          kelas_kabin, pnr, status_penerimaan, timestamp)
@@ -408,7 +408,7 @@ def claim_edit(request, pk):
 
         try:
             sql = """
-                UPDATE CLAIM_MISSING_MILES
+                UPDATE claim_missing_miles
                 SET maskapai = %s,
                     bandara_asal = %s,
                     bandara_tujuan = %s,
@@ -467,7 +467,7 @@ def claim_delete(request, pk):
         return redirect('green:claim_list')
 
     if request.method == 'POST':
-        sql = 'DELETE FROM CLAIM_MISSING_MILES WHERE id = %s'
+        sql = 'DELETE FROM claim_missing_miles WHERE id = %s'
         execute_raw_sql_update(sql, [pk])
         messages.success(request, 'Klaim berhasil dibatalkan.')
         return redirect('green:claim_list')
@@ -496,12 +496,12 @@ def staf_claim_list(request):
                bt.iata_code as bandara_tujuan_iata, bt.nama as bandara_tujuan_nama,
                bt.kota as bandara_tujuan_kota, bt.negara as bandara_tujuan_negara,
                pm.first_mid_name as member_first_name, pm.last_name as member_last_name
-        FROM CLAIM_MISSING_MILES c
-        JOIN MASKAPAI m ON c.maskapai = m.kode_maskapai
-        JOIN BANDARA ba ON c.bandara_asal = ba.iata_code
-        JOIN BANDARA bt ON c.bandara_tujuan = bt.iata_code
-        JOIN MEMBER mb ON c.email_member = mb.email
-        JOIN PENGGUNA pm ON mb.email = pm.email
+        FROM claim_missing_miles c
+        JOIN maskapai m ON c.maskapai = m.kode_maskapai
+        JOIN bandara ba ON c.bandara_asal = ba.iata_code
+        JOIN bandara bt ON c.bandara_tujuan = bt.iata_code
+        JOIN member mb ON c.email_member = mb.email
+        JOIN pengguna pm ON mb.email = pm.email
         WHERE 1=1
     """
     params = []
@@ -570,15 +570,15 @@ def staf_claim_proses(request, pk):
                 return redirect('green:staf_claim_list')
 
             commands = [
-                ('UPDATE CLAIM_MISSING_MILES SET status_penerimaan = %s, email_staf = %s WHERE id = %s',
+                ('UPDATE claim_missing_miles SET status_penerimaan = %s, email_staf = %s WHERE id = %s',
                  [action, staf.email_id, claim.id]),
             ]
 
             if action == 'Disetujui':
                 miles = ClaimMissingMiles.MILES_PER_KELAS.get(claim.kelas_kabin, 500)
                 commands.extend([
-                    ('UPDATE MEMBER SET award_miles = award_miles + %s WHERE email = %s', [miles, member.email]),
-                    ('UPDATE MEMBER SET total_miles = total_miles + %s WHERE email = %s', [miles, member.email]),
+                    ('UPDATE member SET award_miles = award_miles + %s WHERE email = %s', [miles, member.email]),
+                    ('UPDATE member SET total_miles = total_miles + %s WHERE email = %s', [miles, member.email]),
                 ])
 
             execute_raw_sql_many(commands)
@@ -611,9 +611,9 @@ def transfer_list(request):
                'Kirim' AS tipe,
                p.first_mid_name || ' ' || p.last_name AS member_nama,
                m.email AS member_email
-        FROM TRANSFER t
-        JOIN MEMBER m ON t.email_member_2 = m.email
-        JOIN PENGGUNA p ON m.email = p.email
+        FROM transfer t
+        JOIN member m ON t.email_member_2 = m.email
+        JOIN pengguna p ON m.email = p.email
         WHERE t.email_member_1 = %s
     """
     sql_in = """
@@ -621,9 +621,9 @@ def transfer_list(request):
                'Terima' AS tipe,
                p.first_mid_name || ' ' || p.last_name AS member_nama,
                m.email AS member_email
-        FROM TRANSFER t
-        JOIN MEMBER m ON t.email_member_1 = m.email
-        JOIN PENGGUNA p ON m.email = p.email
+        FROM transfer t
+        JOIN member m ON t.email_member_1 = m.email
+        JOIN pengguna p ON m.email = p.email
         WHERE t.email_member_2 = %s
     """
 
@@ -680,10 +680,10 @@ def transfer_create(request):
 
         try:
             commands = [
-                ('INSERT INTO TRANSFER (email_member_1, email_member_2, timestamp, jumlah, catatan) VALUES (%s, %s, %s, %s, %s)',
+                ('INSERT INTO transfer (email_member_1, email_member_2, timestamp, jumlah, catatan) VALUES (%s, %s, %s, %s, %s)',
                  [member.email_id, email_penerima, timezone.now(), jumlah, catatan or None]),
-                ('UPDATE MEMBER SET award_miles = award_miles - %s WHERE email = %s', [jumlah, member.email_id]),
-                ('UPDATE MEMBER SET award_miles = award_miles + %s WHERE email = %s', [jumlah, email_penerima]),
+                ('UPDATE member SET award_miles = award_miles - %s WHERE email = %s', [jumlah, member.email_id]),
+                ('UPDATE member SET award_miles = award_miles + %s WHERE email = %s', [jumlah, email_penerima]),
             ]
             execute_raw_sql_many(commands)
             messages.success(request, f'{jumlah} miles berhasil ditransfer ke {email_penerima}.')

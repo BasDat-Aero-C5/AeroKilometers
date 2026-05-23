@@ -91,7 +91,7 @@ def execute_raw_sql_update(sql, params=None):
 
 def authenticate_pengguna(email, password):
     """Authenticate against the database using the stored function if available."""
-    sql = "SELECT * FROM PENGGUNA WHERE email = %s AND password = %s"
+    sql = "SELECT * FROM pengguna WHERE email = %s AND password = %s"
     rows = execute_raw_sql(sql, [email, password])
     return rows[0] if rows else None
 
@@ -104,8 +104,8 @@ def get_member_data(email):
                p.first_mid_name, p.last_name, p.salutation,
                p.country_code, p.mobile_number,
                p.tanggal_lahir, p.kewarganegaraan
-        FROM MEMBER m
-        JOIN PENGGUNA p ON m.email = p.email
+        FROM member m
+        JOIN pengguna p ON m.email = p.email
         WHERE m.email = %s
     """
     result = execute_raw_sql(sql, [email])
@@ -120,9 +120,9 @@ def get_staf_data(email):
                p.first_mid_name, p.last_name, p.salutation,
                p.country_code, p.mobile_number,
                p.tanggal_lahir, p.kewarganegaraan
-        FROM STAF s
-        JOIN PENGGUNA p ON s.email = p.email
-        JOIN MASKAPAI m ON s.kode_maskapai = m.kode_maskapai
+        FROM staf s
+        JOIN pengguna p ON s.email = p.email
+        JOIN maskapai m ON s.kode_maskapai = m.kode_maskapai
         WHERE s.email = %s
     """
     result = execute_raw_sql(sql, [email])
@@ -132,16 +132,16 @@ def get_staf_data(email):
 def get_member_transactions(email, limit=5):
     """Return recent transactions for a member."""
     sql = """
-        SELECT 'Transfer' as type, tanggal_transfer as date, jumlah_miles * -1 as miles
-        FROM TRANSFER
+        SELECT 'Transfer' as type, timestamp as date, jumlah * -1 as miles
+        FROM transfer
+        WHERE email_member_1 = %s
+        UNION ALL
+        SELECT 'Redeem' as type, timestamp as date, 0 as miles
+        FROM redeem
         WHERE email_member = %s
         UNION ALL
-        SELECT 'Redeem' as type, tanggal_redeem as date, -jumlah_miles as miles
-        FROM REDEEM
-        WHERE email_member = %s
-        UNION ALL
-        SELECT 'Package' as type, timestamp as date, jumlah_miles as miles
-        FROM MEMBER_AWARD_MILES_PACKAGE
+        SELECT 'Package' as type, timestamp as date, 0 as miles
+        FROM member_award_miles_package
         WHERE email_member = %s
         ORDER BY date DESC
         LIMIT %s
@@ -156,7 +156,7 @@ def get_staf_claim_stats(email):
             COUNT(CASE WHEN status_penerimaan = 'Menunggu' THEN 1 END) as pending,
             COUNT(CASE WHEN status_penerimaan = 'Disetujui' THEN 1 END) as approved,
             COUNT(CASE WHEN status_penerimaan = 'Ditolak' THEN 1 END) as rejected
-        FROM CLAIM_MISSING_MILES
+        FROM claim_missing_miles
         WHERE email_staf = %s
     """
     result = execute_raw_sql(sql, [email])
@@ -166,10 +166,10 @@ def get_staf_claim_stats(email):
 def get_homepage_stats():
     """Return homepage statistic cards based on current DB counts."""
     queries = {
-        'Member Aktif': "SELECT COUNT(*) as cnt FROM MEMBER",
-        'Maskapai Partner': "SELECT COUNT(*) as cnt FROM MASKAPAI",
-        'Bandara Terhubung': "SELECT COUNT(*) as cnt FROM BANDARA",
-        'Hadiah Menanti': "SELECT COUNT(*) as cnt FROM HADIAH",
+        'Member Aktif': "SELECT COUNT(*) as cnt FROM member",
+        'Maskapai Partner': "SELECT COUNT(*) as cnt FROM maskapai",
+        'Bandara Terhubung': "SELECT COUNT(*) as cnt FROM bandara",
+        'Hadiah Menanti': "SELECT COUNT(*) as cnt FROM hadiah",
     }
 
     stats = []
@@ -203,8 +203,8 @@ def login(request):
                 messages.error(request, 'Email atau password salah.')
                 return render(request, 'login.html', {'navbar_type': 'guest'})
 
-            member_rows = execute_raw_sql('SELECT email FROM MEMBER WHERE email = %s', [email])
-            staf_rows = execute_raw_sql('SELECT email FROM STAF WHERE email = %s', [email])
+            member_rows = execute_raw_sql('SELECT email FROM member WHERE email = %s', [email])
+            staf_rows = execute_raw_sql('SELECT email FROM staf WHERE email = %s', [email])
 
             request.session['email'] = email
             if member_rows:
@@ -250,7 +250,7 @@ def register(request):
 
         try:
             sql_pengguna = (
-                'INSERT INTO PENGGUNA (email, password, salutation, first_mid_name, last_name, country_code, mobile_number, tanggal_lahir, kewarganegaraan) '
+                'INSERT INTO pengguna (email, password, salutation, first_mid_name, last_name, country_code, mobile_number, tanggal_lahir, kewarganegaraan) '
                 'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)'
             )
             execute_raw_sql_update(sql_pengguna, [email, password, salutation, first_mid_name, last_name, country_code, mobile_number, tanggal_lahir, kewarganegaraan])
@@ -258,13 +258,13 @@ def register(request):
             if role == 'member':
                 nomor_member = f'M{int(timezone.now().timestamp()) % 1000000:06d}'
                 sql_member = (
-                    'INSERT INTO MEMBER (email, nomor_member, tanggal_bergabung, id_tier, award_miles, total_miles) '
+                    'INSERT INTO member (email, nomor_member, tanggal_bergabung, id_tier, award_miles, total_miles) '
                     'VALUES (%s, %s, %s, %s, %s, %s)'
                 )
                 execute_raw_sql_update(sql_member, [email, nomor_member, timezone.now().date(), 'T1', 0, 0])
             else:
                 id_staf = f'S{int(timezone.now().timestamp()) % 1000000:06d}'
-                sql_staf = 'INSERT INTO STAF (email, id_staf, kode_maskapai) VALUES (%s, %s, %s)'
+                sql_staf = 'INSERT INTO staf (email, id_staf, kode_maskapai) VALUES (%s, %s, %s)'
                 execute_raw_sql_update(sql_staf, [email, id_staf, kode_maskapai])
 
             messages.success(request, 'Pendaftaran berhasil. Silakan login.')

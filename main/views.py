@@ -283,12 +283,12 @@ def dashboard_member(request):
     email = request.session.get('email')
     
     if not email:
-        return redirect('login')
+        return redirect('main:login')
     
     member = get_member_data(email)
     
     if not member:
-        return redirect('login')
+        return redirect('main:login')
     
     transactions = get_member_transactions(email)
     
@@ -328,12 +328,12 @@ def dashboard_staff(request):
     email = request.session.get('email')
     
     if not email:
-        return redirect('login')
+        return redirect('main:login')
     
     staf = get_staf_data(email)
     
     if not staf:
-        return redirect('login')
+        return redirect('main:login')
     
     claim_stats = get_staf_claim_stats(email)
     
@@ -367,12 +367,12 @@ def profile_view(request):
     role = request.GET.get("role", "member")
     
     if not email:
-        return redirect('login')
+        return redirect('main:login')
     
     if role == "member":
         member = get_member_data(email)
         if not member:
-            return redirect('login')
+            return redirect('main:login')
         
         user = {
             "email": member.get('email', ''),
@@ -390,7 +390,7 @@ def profile_view(request):
     else:  # staff
         staf = get_staf_data(email)
         if not staf:
-            return redirect('login')
+            return redirect('main:login')
         
         user = {
             "email": staf.get('email', ''),

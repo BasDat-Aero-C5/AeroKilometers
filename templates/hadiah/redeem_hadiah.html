@@ -50,7 +50,7 @@
         <p class="mt-2 font-bold">{{ r.miles }} miles</p>
         <p class="text-xs text-gray-500 mt-1">Periode: {{ r.period }}</p>
 
-        <button
+        <button type="button"
           onclick="openModal('{{ r.name }}', '{{ r.miles }}', '{{ r.code }}', '{{ r.partner }}')"
           class="mt-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm">
           REDEEM
@@ -104,9 +104,13 @@
         Batal
       </button>
 
-      <button class="px-4 py-2 bg-primary text-white rounded-lg text-sm">
-        Redeem
-      </button>
+      <form method="POST" action="{% url 'blue:redeem_confirm' %}">
+        {% csrf_token %}
+        <input type="hidden" name="kode_hadiah" id="modal-kode-hadiah">
+        <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg text-sm">
+          Redeem
+        </button>
+      </form>
     </div>
 
   </div>
@@ -115,6 +119,7 @@
 <script>
 function openModal(name, miles, code, partner) {
     document.getElementById("modal").classList.remove("hidden");
+    document.getElementById("modal-kode-hadiah").value = code;
     document.getElementById("modal-text").innerText =
         `Miles akan dipotong sebesar ${miles} untuk reward ${name} dengan kode ${code} dari ${partner}`;
 }

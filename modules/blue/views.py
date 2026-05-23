@@ -1,12 +1,13 @@
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.utils import timezone
-from django.views.decorators.http import require_http_methods
-from django.conf import settings
-import psycopg2
-from psycopg2.extras import RealDictCursor
 import os
 from urllib.parse import urlparse
+
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from django.conf import settings
+from django.contrib import messages
+from django.shortcuts import redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_http_methods
 
 
 class DBRow(dict):
@@ -25,93 +26,71 @@ class DBRow(dict):
         self[name] = value
 
 
-# Database connection helper
 def get_db_connection():
-    """Get psycopg2 database connection."""
     if settings.PRODUCTION:
         db_url = os.environ.get('DATABASE_URL')
         parsed = urlparse(db_url)
-        conn = psycopg2.connect(
+        return psycopg2.connect(
             host=parsed.hostname,
             port=parsed.port,
             database=parsed.path[1:],
             user=parsed.username,
             password=parsed.password,
-            sslmode='require'   
+            sslmode='require',
         )
-    else:
-        from django.db import connection
-        return connection
-    return conn
+
+    from django.db import connection
+    return connection
 
 
 def execute_raw_sql(sql, params=None):
-    """Execute raw SQL query and return results."""
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor) if isinstance(conn, psycopg2.extensions.connection) else conn.cursor()
-        
-        if params:
-            cursor.execute(sql, params)
+        is_postgres = isinstance(conn, psycopg2.extensions.connection)
+        cursor = conn.cursor(cursor_factory=RealDictCursor) if is_postgres else conn.cursor()
+        cursor.execute(sql, params or [])
+
+        if not cursor.description:
+            rows = []
+        elif is_postgres:
+            rows = [DBRow(row) for row in cursor.fetchall()]
         else:
-            cursor.execute(sql)
-        
-        if cursor.description:
-            if isinstance(conn, psycopg2.extensions.connection):
-                results = cursor.fetchall()
-                result_list = [dict(row) for row in results]
-            else:
-                columns = [col[0] for col in cursor.description]
-                results = cursor.fetchall()
-                result_list = [dict(zip(columns, row)) for row in results]
-        else:
-            result_list = []
-        
+            columns = [col[0] for col in cursor.description]
+            rows = [DBRow(dict(zip(columns, row))) for row in cursor.fetchall()]
+
         cursor.close()
-        if hasattr(conn, 'commit'):
-            conn.commit()
-        if isinstance(conn, psycopg2.extensions.connection):
+        if is_postgres:
             conn.close()
-        
-        return result_list
+        return rows
     except Exception as e:
         print(f"Database error: {e}")
         return []
 
 
 def execute_raw_sql_update(sql, params=None):
-    """Execute raw SQL update/insert/delete query."""
+    conn = get_db_connection()
+    is_postgres = isinstance(conn, psycopg2.extensions.connection)
+    cursor = conn.cursor()
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        if params:
-            cursor.execute(sql, params)
-        else:
-            cursor.execute(sql)
-        
+        cursor.execute(sql, params or [])
         rowcount = cursor.rowcount
-        cursor.close()
         conn.commit()
-        if isinstance(conn, psycopg2.extensions.connection):
-            conn.close()
-        
         return rowcount
-    except Exception as e:
-        print(f"Database error: {e}")
-        return 0
+    finally:
+        cursor.close()
+        if is_postgres:
+            conn.close()
 
 
-# Authentication Helpers
 def get_member(request):
-    """Return Member object for the logged-in user, or None."""
     email = request.session.get('email')
     role = request.session.get('role')
-    
+
     if not email or role != 'member':
         return None
 
-    sql = """
+    rows = execute_raw_sql(
+        """
         SELECT m.email, m.nomor_member, m.tanggal_bergabung, m.id_tier,
                m.award_miles, m.total_miles,
                p.first_mid_name, p.last_name, p.salutation,
@@ -121,20 +100,21 @@ def get_member(request):
         FROM member m
         JOIN pengguna p ON m.email = p.email
         WHERE m.email = %s
-    """
-    rows = execute_raw_sql(sql, [email])
-    return DBRow(rows[0]) if rows else None
+        """,
+        [email],
+    )
+    return rows[0] if rows else None
 
 
 def get_staf(request):
-    """Return Staf object for the logged-in user, or None."""
     email = request.session.get('email')
     role = request.session.get('role')
-    
+
     if not email or role != 'staff':
         return None
 
-    sql = """
+    rows = execute_raw_sql(
+        """
         SELECT s.email, s.id_staf, s.kode_maskapai,
                m.nama_maskapai,
                p.first_mid_name, p.last_name, p.salutation,
@@ -145,13 +125,13 @@ def get_staf(request):
         JOIN pengguna p ON s.email = p.email
         JOIN maskapai m ON s.kode_maskapai = m.kode_maskapai
         WHERE s.email = %s
-    """
-    rows = execute_raw_sql(sql, [email])
-    return DBRow(rows[0]) if rows else None
+        """,
+        [email],
+    )
+    return rows[0] if rows else None
 
 
 def login_required_member(view_func):
-    """Decorator: redirect to login if not Member."""
     def wrapper(request, *args, **kwargs):
         if not get_member(request):
             messages.error(request, 'Silakan login sebagai Member terlebih dahulu.')
@@ -161,7 +141,6 @@ def login_required_member(view_func):
 
 
 def login_required_staff(view_func):
-    """Decorator: redirect to login if not Staff."""
     def wrapper(request, *args, **kwargs):
         if not get_staf(request):
             messages.error(request, 'Silakan login sebagai Staff terlebih dahulu.')
@@ -170,563 +149,270 @@ def login_required_staff(view_func):
     return wrapper
 
 
-# ===== Rewards Redeem (Member) =====
+def provider_name(row):
+    return row.get('nama_mitra') or row.get('nama_maskapai') or f"Penyedia {row.get('id_penyedia')}"
+
 
 @login_required_member
 def redeem_hadiah(request):
-    """CR — Redeem rewards with award miles."""
     member = get_member(request)
-    tab = request.GET.get("tab", "katalog")
-    
-    sql = """
-        SELECT 
-            kode_hadiah,
-            nama_hadiah,
-            harga_miles,
-            deskripsi,
-            tanggal_mulai,
-            tanggal_berakhir,
-            id_penyedia
-        FROM hadiah
-        WHERE tanggal_mulai <= CURDATE() AND tanggal_berakhir >= CURDATE()
-        ORDER BY tanggal_mulai DESC
-    """
-    
-    rewards = execute_raw_sql(sql)
-    
-    sql_history = """
-        SELECT 
-            rh.kode_hadiah,
-            h.nama_hadiah,
-            rh.tanggal_redeem as tanggal,
-            h.harga_miles as miles
-        FROM riwayat_redeem rh
-        JOIN hadiah h ON rh.kode_hadiah = h.kode_hadiah
-        WHERE rh.email_member = %s
-        ORDER BY rh.tanggal_redeem DESC
+    tab = request.GET.get('tab', 'katalog')
+
+    rewards = execute_raw_sql(
+        """
+        SELECT h.kode_hadiah AS code, h.kode_hadiah,
+               h.nama AS name, h.nama AS nama_hadiah,
+               h.miles, h.miles AS harga_miles,
+               h.deskripsi AS desc, h.deskripsi,
+               h.valid_start_date, h.program_end, h.id_penyedia,
+               mt.nama_mitra, mk.nama_maskapai
+        FROM hadiah h
+        LEFT JOIN mitra mt ON mt.id_penyedia = h.id_penyedia
+        LEFT JOIN maskapai mk ON mk.id_penyedia = h.id_penyedia
+        WHERE h.valid_start_date <= CURRENT_DATE AND h.program_end >= CURRENT_DATE
+        ORDER BY h.valid_start_date DESC
+        """
+    )
+    for reward in rewards:
+        reward['partner'] = provider_name(reward)
+        reward['period'] = f"{reward.get('valid_start_date')} - {reward.get('program_end')}"
+
+    history = execute_raw_sql(
+        """
+        SELECT r.kode_hadiah,
+               h.nama AS name,
+               r.timestamp AS date,
+               h.miles AS miles
+        FROM redeem r
+        JOIN hadiah h ON r.kode_hadiah = h.kode_hadiah
+        WHERE r.email_member = %s
+        ORDER BY r.timestamp DESC
         LIMIT 20
-    """
-    
-    history = execute_raw_sql(sql_history, [member.email_id])
-    
-    context = {
+        """,
+        [member.email_id],
+    )
+
+    return render(request, 'hadiah/redeem_hadiah.html', {
         'member': member,
         'tab': tab,
         'rewards': rewards,
         'history': history,
         'user_miles': member.award_miles,
         'navbar_type': 'member',
-    }
-    return render(request, 'hadiah/redeem_hadiah.html', context)
+    })
 
 
 @login_required_member
 @require_http_methods(["POST"])
 def redeem_confirm(request):
-    """Process reward redemption."""
     member = get_member(request)
     kode_hadiah = request.POST.get('kode_hadiah', '').strip()
-    
+
     if not kode_hadiah:
         messages.error(request, 'Kode hadiah tidak valid.')
         return redirect('blue:redeem_hadiah')
-    
-    sql = "SELECT * FROM hadiah WHERE kode_hadiah = %s"
-    hadiaha_list = execute_raw_sql(sql, [kode_hadiah])
-    
-    if not hadiaha_list:
+
+    rows = execute_raw_sql(
+        "SELECT kode_hadiah, nama, miles FROM hadiah WHERE kode_hadiah = %s",
+        [kode_hadiah],
+    )
+    if not rows:
         messages.error(request, 'Hadiah tidak ditemukan.')
         return redirect('blue:redeem_hadiah')
-    
-    hadiah = hadiaha_list[0]
-    harga_miles = hadiah['harga_miles']
-    
-    if member.award_miles < harga_miles:
-        messages.error(request, f'Award miles Anda tidak mencukupi. Diperlukan: {harga_miles}, Tersedia: {member.award_miles}')
+
+    hadiah = rows[0]
+    miles = hadiah.miles
+
+    if member.award_miles < miles:
+        messages.error(request, f'Award miles Anda tidak mencukupi. Diperlukan: {miles}, Tersedia: {member.award_miles}')
         return redirect('blue:redeem_hadiah')
-    
+
     try:
-        sql_redeem = """
-            INSERT INTO riwayat_redeem (email_member, kode_hadiah, tanggal_redeem)
-            VALUES (%s, %s, %s)
-        """
-        execute_raw_sql_update(sql_redeem, [member.email_id, kode_hadiah, timezone.now()])
-        
-        member.award_miles -= harga_miles
-        sql_update_miles = "UPDATE member SET award_miles = award_miles - %s WHERE email = %s"
-        execute_raw_sql_update(sql_update_miles, [harga_miles, member.email_id])
-        
-        messages.success(request, f'Hadiah berhasil ditukar. {harga_miles} award miles dikurangi dari akun Anda.')
-        
+        execute_raw_sql_update(
+            """
+            INSERT INTO redeem (email_member, kode_hadiah, timestamp, status)
+            VALUES (%s, %s, %s, %s)
+            """,
+            [member.email_id, kode_hadiah, timezone.now(), 'Berhasil'],
+        )
+        execute_raw_sql_update(
+            "UPDATE member SET award_miles = award_miles - %s WHERE email = %s",
+            [miles, member.email_id],
+        )
+        messages.success(request, f'Hadiah berhasil ditukar. {miles} award miles dikurangi dari akun Anda.')
     except Exception as e:
         messages.error(request, f'Terjadi kesalahan: {str(e)}')
-    
+
     return redirect('blue:redeem_hadiah')
 
 
-# ===== AWARD MILES PACKAGE (Member) =====
+def default_packages():
+    return [
+        {'code': 'AMP-001', 'miles': 1000, 'price': 150000},
+        {'code': 'AMP-002', 'miles': 5000, 'price': 650000},
+        {'code': 'AMP-003', 'miles': 10000, 'price': 1200000},
+        {'code': 'AMP-004', 'miles': 25000, 'price': 2750000},
+    ]
+
 
 @login_required_member
 def package_list(request):
-    """CR — Display and buy award miles packages."""
     member = get_member(request)
-    
-    packages = [
-        {"code": "AMP-001", "miles": 1000, "price": 150000},
-        {"code": "AMP-002", "miles": 5000, "price": 650000},
-        {"code": "AMP-003", "miles": 10000, "price": 1200000},
-        {"code": "AMP-004", "miles": 25000, "price": 2750000},
-    ]
-    
-    context = {
+    packages = execute_raw_sql(
+        """
+        SELECT id_package AS code, jumlah_miles AS miles, harga AS price
+        FROM award_miles_package
+        ORDER BY jumlah_miles
+        """
+    ) or default_packages()
+
+    return render(request, 'hadiah/package_list.html', {
         'member': member,
         'packages': packages,
         'current_miles': member.award_miles,
-        'navbar_type': 'member',
-    }
-    return render(request, 'hadiah/package_list.html', context)
-
-
-@login_required_member
-@require_http_methods(["POST"])
-def buy_package(request):
-    """Process package purchase."""
-    member = get_member(request)
-    kode_package = request.POST.get('kode_package', '').strip()
-    
-    packages = {
-        "AMP-001": {"miles": 1000, "price": 150000},
-        "AMP-002": {"miles": 5000, "price": 650000},
-        "AMP-003": {"miles": 10000, "price": 1200000},
-        "AMP-004": {"miles": 25000, "price": 2750000},
-    }
-    
-    if kode_package not in packages:
-        messages.error(request, 'Paket tidak valid.')
-        return redirect('blue:package_list')
-    
-    package = packages[kode_package]
-    
-    try:
-        sql_purchase = """
-            INSERT INTO pembelian_miles (email_member, kode_package, jumlah_miles, tanggal_pembelian)
-            VALUES (%s, %s, %s, %s)
-        """
-        execute_raw_sql_update(sql_purchase, [
-            member.email_id, kode_package, package['miles'], timezone.now()
-        ])
-        
-        member.award_miles += package['miles']
-        member.total_miles += package['miles']
-        sql_update_miles = "UPDATE member SET award_miles = award_miles + %s, total_miles = total_miles + %s WHERE email = %s"
-        execute_raw_sql_update(sql_update_miles, [package['miles'], package['miles'], member.email_id])
-        
-        messages.success(request, f'Paket {package["miles"]} miles berhasil dibeli!')
-        
-    except Exception as e:
-        messages.error(request, f'Terjadi kesalahan: {str(e)}')
-    
-    return redirect('blue:package_list')
-
-
-# ===== Tier Information (Member) =====
-
-@login_required_member
-def tier_info(request):
-    """R — Display tier information and benefits."""
-    member = get_member(request)
-    
-    sql = """
-        SELECT 
-            id_tier,
-            nama as tier_name,
-            minimal_frekuensi_terbang,
-            minimal_tier_miles
-        FROM tier
-        ORDER BY minimal_tier_miles ASC
-    """
-    
-    tiers = execute_raw_sql(sql)
-    
-    sql_member_tier = """
-        SELECT t.id_tier, t.nama as tier_name
-        FROM tier t
-        WHERE t.id_tier = %s
-    """
-    
-    current_tier_list = execute_raw_sql(sql_member_tier, [member.id_tier_id])
-    current_tier = current_tier_list[0] if current_tier_list else None
-    
-    context = {
-        'member': member,
-        'tiers': tiers,
-        'current_tier': current_tier,
-        'navbar_type': 'member',
-    }
-    return render(request, 'hadiah/tier.html', context)
-
-
-# ===== REPORTS & TRANSACTION HISTORY (Staff) =====
-
-@login_required_staff
-def report_view(request):
-    """RD — Display miles transaction reports and history."""
-    staf = get_staf(request)
-    
-    start_date = request.GET.get('start_date', '')
-    end_date = request.GET.get('end_date', '')
-    transaction_type = request.GET.get('type', 'semua')
-    
-    sql = """
-        SELECT 
-            'Redeem' as tipe,
-            email_member,
-            kode_hadiah as reference,
-            -harga_miles as miles,
-            tanggal_redeem as tanggal
-        FROM riwayat_redeem
-        WHERE 1=1
-    """
-    
-    params = []
-    
-    if transaction_type in ['redeem', 'semua']:
-        if start_date:
-            sql += " AND tanggal_redeem >= %s"
-            params.append(start_date)
-        if end_date:
-            sql += " AND tanggal_redeem <= %s"
-            params.append(end_date)
-    
-    if transaction_type in ['transfer', 'semua']:
-        sql += """
-            UNION ALL
-            SELECT 
-                'Transfer Keluar' as tipe,
-                email_member_1 as email_member,
-                email_member_2 as reference,
-                -jumlah as miles,
-                timestamp as tanggal
-            FROM transfer
-            WHERE 1=1
-        """
-        if start_date:
-            sql += " AND timestamp >= %s"
-            params.append(start_date) if not (transaction_type in ['redeem'] and start_date in params) else None
-        if end_date:
-            sql += " AND timestamp <= %s"
-            params.append(end_date) if not (transaction_type in ['redeem'] and end_date in params) else None
-    
-    sql += " ORDER BY tanggal DESC LIMIT 500"
-    
-    transactions = execute_raw_sql(sql, params) if params else execute_raw_sql(sql)
-    
-    sql_summary = """
-        SELECT 
-            COUNT(*) as total_transactions,
-            SUM(CASE WHEN tanggal_redeem IS NOT NULL THEN 1 ELSE 0 END) as total_redeems
-        FROM riwayat_redeem
-    """
-    
-    summary_list = execute_raw_sql(sql_summary)
-    summary = summary_list[0] if summary_list else {'total_transactions': 0, 'total_redeems': 0}
-    
-    context = {
-        'staf': staf,
-        'transactions': transactions,
-        'summary': summary,
-        'start_date': start_date,
-        'end_date': end_date,
-        'transaction_type': transaction_type,
-        'navbar_type': 'staff',
-    }
-    return render(request, 'transfer/report.html', context)
-
-
-# ===== Rewards Redeem (Member) =====
-
-@login_required_member
-def redeem_hadiah(request):
-    """CR — Redeem rewards with award miles."""
-    member = get_member(request)
-    tab = request.GET.get("tab", "katalog")
-    
-    # Fetch available rewards
-    sql = """
-        SELECT 
-            kode_hadiah,
-            nama_hadiah,
-            harga_miles,
-            deskripsi,
-            tanggal_mulai,
-            tanggal_berakhir,
-            id_penyedia
-        FROM hadiah
-        WHERE tanggal_mulai <= CURDATE() AND tanggal_berakhir >= CURDATE()
-        ORDER BY tanggal_mulai DESC
-    """
-    
-    rewards = execute_raw_sql(sql)
-    
-    # Fetch redemption history
-    sql_history = """
-        SELECT 
-            rh.kode_hadiah,
-            h.nama_hadiah,
-            rh.tanggal_redeem as tanggal,
-            h.harga_miles as miles
-        FROM riwayat_redeem rh
-        JOIN hadiah h ON rh.kode_hadiah = h.kode_hadiah
-        WHERE rh.email_member = %s
-        ORDER BY rh.tanggal_redeem DESC
-        LIMIT 20
-    """
-    
-    history = execute_raw_sql(sql_history, [member.email_id])
-    
-    context = {
-        'member': member,
-        'tab': tab,
-        'rewards': rewards,
-        'history': history,
         'user_miles': member.award_miles,
         'navbar_type': 'member',
-    }
-    return render(request, 'hadiah/redeem_hadiah.html', context)
-
-
-@login_required_member
-@require_http_methods(["POST"])
-def redeem_confirm(request):
-    """Process reward redemption."""
-    member = get_member(request)
-    kode_hadiah = request.POST.get('kode_hadiah', '').strip()
-    
-    if not kode_hadiah:
-        messages.error(request, 'Kode hadiah tidak valid.')
-        return redirect('blue:redeem_hadiah')
-    
-    # Fetch hadiah details
-    sql = "SELECT * FROM hadiah WHERE kode_hadiah = %s"
-    hadiaha_list = execute_raw_sql(sql, [kode_hadiah])
-    
-    if not hadiaha_list:
-        messages.error(request, 'Hadiah tidak ditemukan.')
-        return redirect('blue:redeem_hadiah')
-    
-    hadiah = hadiaha_list[0]
-    harga_miles = hadiah['harga_miles']
-    
-    # Check if member has enough award miles
-    if member.award_miles < harga_miles:
-        messages.error(request, f'Award miles Anda tidak mencukupi. Diperlukan: {harga_miles}, Tersedia: {member.award_miles}')
-        return redirect('blue:redeem_hadiah')
-    
-    try:
-        # Record redemption
-        sql_redeem = """
-            INSERT INTO riwayat_redeem (email_member, kode_hadiah, tanggal_redeem)
-            VALUES (%s, %s, %s)
-        """
-        execute_raw_sql_update(sql_redeem, [member.email_id, kode_hadiah, timezone.now()])
-        
-        # Deduct award miles
-        member.award_miles -= harga_miles
-        sql_update_miles = "UPDATE member SET award_miles = award_miles - %s WHERE email = %s"
-        execute_raw_sql_update(sql_update_miles, [harga_miles, member.email_id])
-        
-        messages.success(request, f'Hadiah berhasil ditukar. {harga_miles} award miles dikurangi dari akun Anda.')
-        
-    except Exception as e:
-        messages.error(request, f'Terjadi kesalahan: {str(e)}')
-    
-    return redirect('blue:redeem_hadiah')
-
-
-# ===== AWARD MILES PACKAGE (Member) =====
-
-@login_required_member
-def package_list(request):
-    """CR — Display and buy award miles packages."""
-    member = get_member(request)
-    
-    # Package options
-    packages = [
-        {"code": "AMP-001", "miles": 1000, "price": 150000},
-        {"code": "AMP-002", "miles": 5000, "price": 650000},
-        {"code": "AMP-003", "miles": 10000, "price": 1200000},
-        {"code": "AMP-004", "miles": 25000, "price": 2750000},
-    ]
-    
-    context = {
-        'member': member,
-        'packages': packages,
-        'current_miles': member.award_miles,
-        'navbar_type': 'member',
-    }
-    return render(request, 'hadiah/package_list.html', context)
+    })
 
 
 @login_required_member
 @require_http_methods(["POST"])
 def buy_package(request):
-    """Process package purchase."""
     member = get_member(request)
     kode_package = request.POST.get('kode_package', '').strip()
-    
-    # Validate package
-    packages = {
-        "AMP-001": {"miles": 1000, "price": 150000},
-        "AMP-002": {"miles": 5000, "price": 650000},
-        "AMP-003": {"miles": 10000, "price": 1200000},
-        "AMP-004": {"miles": 25000, "price": 2750000},
-    }
-    
+
+    packages = {package['code']: package for package in default_packages()}
+    db_packages = execute_raw_sql(
+        "SELECT id_package AS code, jumlah_miles AS miles FROM award_miles_package"
+    )
+    for package in db_packages:
+        packages[package.code] = package
+
     if kode_package not in packages:
         messages.error(request, 'Paket tidak valid.')
         return redirect('blue:package_list')
-    
-    package = packages[kode_package]
-    
+
     try:
-        # Record purchase
-        sql_purchase = """
-            INSERT INTO pembelian_miles (email_member, kode_package, jumlah_miles, tanggal_pembelian)
-            VALUES (%s, %s, %s, %s)
-        """
-        execute_raw_sql_update(sql_purchase, [
-            member.email_id, kode_package, package['miles'], timezone.now()
-        ])
-        
-        # Add award miles
-        member.award_miles += package['miles']
-        member.total_miles += package['miles']
-        sql_update_miles = "UPDATE member SET award_miles = award_miles + %s, total_miles = total_miles + %s WHERE email = %s"
-        execute_raw_sql_update(sql_update_miles, [package['miles'], package['miles'], member.email_id])
-        
-        messages.success(request, f'Paket {package["miles"]} miles berhasil dibeli!')
-        
+        execute_raw_sql_update(
+            """
+            INSERT INTO member_award_miles_package (email_member, id_package, timestamp)
+            VALUES (%s, %s, %s)
+            """,
+            [member.email_id, kode_package, timezone.now()],
+        )
+        messages.success(request, f'Paket {packages[kode_package]["miles"]} miles berhasil dibeli!')
     except Exception as e:
         messages.error(request, f'Terjadi kesalahan: {str(e)}')
-    
+
     return redirect('blue:package_list')
 
 
-# ===== Tier Information (Member) =====
-
 @login_required_member
 def tier_info(request):
-    """R — Display tier information and benefits."""
     member = get_member(request)
-    
-    # Fetch tier information
-    sql = """
-        SELECT 
-            id_tier,
-            nama as tier_name,
-            minimal_frekuensi_terbang,
-            minimal_tier_miles
+    rows = execute_raw_sql(
+        """
+        SELECT id_tier, nama, minimal_frekuensi_terbang, minimal_tier_miles
         FROM tier
         ORDER BY minimal_tier_miles ASC
-    """
-    
-    tiers = execute_raw_sql(sql)
-    
-    # Get current member tier
-    sql_member_tier = """
-        SELECT t.id_tier, t.nama as tier_name
-        FROM tier t
-        WHERE t.id_tier = %s
-    """
-    
-    current_tier_list = execute_raw_sql(sql_member_tier, [member.id_tier_id])
-    current_tier = current_tier_list[0] if current_tier_list else None
-    
-    context = {
+        """
+    )
+
+    tiers = []
+    next_tier = None
+    for row in rows:
+        tier = DBRow({
+            'id': row.id_tier,
+            'name': row.nama,
+            'min_flight': row.minimal_frekuensi_terbang,
+            'min_miles': row.minimal_tier_miles,
+            'benefits': [
+                'Prioritas layanan member',
+                'Akses promo sesuai tier',
+                'Akumulasi miles lebih mudah dipantau',
+            ],
+        })
+        tiers.append(tier)
+        if not next_tier and row.minimal_tier_miles > member.total_miles:
+            next_tier = tier
+
+    current_tier = next((tier.name for tier in tiers if tier.id == member.id_tier_id), member.id_tier_id)
+
+    return render(request, 'hadiah/tier.html', {
         'member': member,
         'tiers': tiers,
         'current_tier': current_tier,
+        'current_miles': member.total_miles,
+        'next_tier': next_tier,
         'navbar_type': 'member',
-    }
-    return render(request, 'hadiah/tier.html', context)
+    })
 
-
-# ===== REPORTS & TRANSACTION HISTORY (Staff) =====
 
 @login_required_staff
 def report_view(request):
-    """RD — Display miles transaction reports and history."""
     staf = get_staf(request)
-    
-    # Filter parameters
-    start_date = request.GET.get('start_date', '')
-    end_date = request.GET.get('end_date', '')
-    transaction_type = request.GET.get('type', 'semua')  # redeem, transfer, buy, claim
-    
-    # Base query for transactions
-    sql = """
-        SELECT 
-            'Redeem' as tipe,
-            email_member,
-            kode_hadiah as reference,
-            -harga_miles as miles,
-            tanggal_redeem as tanggal
-        FROM riwayat_redeem
-        WHERE 1=1
-    """
-    
-    params = []
-    
-    if transaction_type in ['redeem', 'semua']:
-        if start_date:
-            sql += " AND tanggal_redeem >= %s"
-            params.append(start_date)
-        if end_date:
-            sql += " AND tanggal_redeem <= %s"
-            params.append(end_date)
-    
-    # Add transfer transactions
-    if transaction_type in ['transfer', 'semua']:
-        sql += """
-            UNION ALL
-            SELECT 
-                'Transfer Keluar' as tipe,
-                email_member_1 as email_member,
-                email_member_2 as reference,
-                -jumlah as miles,
-                timestamp as tanggal
-            FROM transfer
-            WHERE 1=1
+    tab = request.GET.get('tab', 'riwayat')
+
+    transactions = execute_raw_sql(
         """
-        if start_date:
-            sql += " AND timestamp >= %s"
-            params.append(start_date) if not (transaction_type in ['redeem'] and start_date in params) else None
-        if end_date:
-            sql += " AND timestamp <= %s"
-            params.append(end_date) if not (transaction_type in ['redeem'] and end_date in params) else None
-    
-    sql += " ORDER BY tanggal DESC LIMIT 500"
-    
-    transactions = execute_raw_sql(sql, params) if params else execute_raw_sql(sql)
-    
-    # Calculate summary statistics
-    sql_summary = """
-        SELECT 
-            COUNT(*) as total_transactions,
-            SUM(CASE WHEN tanggal_redeem IS NOT NULL THEN 1 ELSE 0 END) as total_redeems
-        FROM riwayat_redeem
-    """
-    
-    summary_list = execute_raw_sql(sql_summary)
-    summary = summary_list[0] if summary_list else {'total_transactions': 0, 'total_redeems': 0}
-    
-    context = {
+        SELECT 'Redeem' AS type,
+               p.first_mid_name || ' ' || p.last_name AS user,
+               r.email_member AS email,
+               -h.miles AS miles,
+               r.timestamp AS date
+        FROM redeem r
+        JOIN hadiah h ON r.kode_hadiah = h.kode_hadiah
+        JOIN pengguna p ON r.email_member = p.email
+        UNION ALL
+        SELECT 'Transfer' AS type,
+               p.first_mid_name || ' ' || p.last_name AS user,
+               t.email_member_1 AS email,
+               -t.jumlah AS miles,
+               t.timestamp AS date
+        FROM transfer t
+        JOIN pengguna p ON t.email_member_1 = p.email
+        UNION ALL
+        SELECT 'Package' AS type,
+               p.first_mid_name || ' ' || p.last_name AS user,
+               mp.email_member AS email,
+               amp.jumlah_miles AS miles,
+               mp.timestamp AS date
+        FROM member_award_miles_package mp
+        JOIN award_miles_package amp ON mp.id_package = amp.id_package
+        JOIN pengguna p ON mp.email_member = p.email
+        ORDER BY date DESC
+        LIMIT 500
+        """
+    )
+
+    total_miles = execute_raw_sql("SELECT COALESCE(SUM(total_miles), 0) AS value FROM member")
+    redeem_count = execute_raw_sql("SELECT COUNT(*) AS value FROM redeem")
+    klaim_count = execute_raw_sql(
+        "SELECT COUNT(*) AS value FROM claim_missing_miles WHERE status_penerimaan = %s",
+        ['Disetujui'],
+    )
+    top_members = execute_raw_sql(
+        """
+        SELECT p.first_mid_name || ' ' || p.last_name AS name,
+               m.total_miles AS total
+        FROM member m
+        JOIN pengguna p ON m.email = p.email
+        ORDER BY m.total_miles DESC
+        LIMIT 10
+        """
+    )
+
+    summary = DBRow({
+        'total_miles': total_miles[0].value if total_miles else 0,
+        'redeem': redeem_count[0].value if redeem_count else 0,
+        'klaim': klaim_count[0].value if klaim_count else 0,
+    })
+
+    return render(request, 'transfer/report.html', {
         'staf': staf,
+        'tab': tab,
         'transactions': transactions,
         'summary': summary,
-        'start_date': start_date,
-        'end_date': end_date,
-        'transaction_type': transaction_type,
+        'top_members': top_members,
         'navbar_type': 'staff',
-    }
-    return render(request, 'transfer/report.html', context)
+    })

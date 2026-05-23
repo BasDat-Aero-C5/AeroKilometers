@@ -1,12 +1,14 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.utils import timezone
-from django.views.decorators.http import require_http_methods
-from django.conf import settings
-import psycopg2
-from psycopg2.extras import RealDictCursor
+from datetime import date, datetime
 import os
 from urllib.parse import urlparse
+
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from django.conf import settings
+from django.contrib import messages
+from django.shortcuts import redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_http_methods
 
 
 class DBRow(dict):
@@ -23,89 +25,83 @@ class DBRow(dict):
         self[name] = value
 
 
-# Database connection helper
 def get_db_connection():
-    """Get psycopg2 database connection."""
     if settings.PRODUCTION:
         db_url = os.environ.get('DATABASE_URL')
         parsed = urlparse(db_url)
-        conn = psycopg2.connect(
+        return psycopg2.connect(
             host=parsed.hostname,
             port=parsed.port,
             database=parsed.path[1:],
             user=parsed.username,
             password=parsed.password,
-            sslmode='require'
+            sslmode='require',
         )
-    else:
-        from django.db import connection
-        return connection
-    return conn
+
+    from django.db import connection
+    return connection
 
 
 def execute_raw_sql(sql, params=None):
-    """Execute raw SQL query and return results."""
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor) if isinstance(conn, psycopg2.extensions.connection) else conn.cursor()
-        
-        if params:
-            cursor.execute(sql, params)
+        is_postgres = isinstance(conn, psycopg2.extensions.connection)
+        cursor = conn.cursor(cursor_factory=RealDictCursor) if is_postgres else conn.cursor()
+        cursor.execute(sql, params or [])
+
+        if not cursor.description:
+            rows = []
+        elif is_postgres:
+            rows = [DBRow(row) for row in cursor.fetchall()]
         else:
-            cursor.execute(sql)
-        
-        if cursor.description:
-            if isinstance(conn, psycopg2.extensions.connection):
-                results = cursor.fetchall()
-                result_list = [dict(row) for row in results]
-            else:
-                columns = [col[0] for col in cursor.description]
-                results = cursor.fetchall()
-                result_list = [dict(zip(columns, row)) for row in results]
-        else:
-            result_list = []
-        
+            columns = [col[0] for col in cursor.description]
+            rows = [DBRow(dict(zip(columns, row))) for row in cursor.fetchall()]
+
         cursor.close()
-        if hasattr(conn, 'commit'):
-            conn.commit()
-        if isinstance(conn, psycopg2.extensions.connection):
+        if is_postgres:
             conn.close()
-        
-        return result_list
+        return rows
     except Exception as e:
         print(f"Database error: {e}")
         return []
 
 
 def execute_raw_sql_update(sql, params=None):
-    """Execute raw SQL update/insert/delete query."""
+    conn = get_db_connection()
+    is_postgres = isinstance(conn, psycopg2.extensions.connection)
+    cursor = conn.cursor()
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        if params:
-            cursor.execute(sql, params)
-        else:
-            cursor.execute(sql)
-        
+        cursor.execute(sql, params or [])
         rowcount = cursor.rowcount
-        cursor.close()
         conn.commit()
-        if isinstance(conn, psycopg2.extensions.connection):
-            conn.close()
-        
         return rowcount
-    except Exception as e:
-        print(f"Database error: {e}")
-        return 0
+    finally:
+        cursor.close()
+        if is_postgres:
+            conn.close()
 
 
-# Authentication Helpers
+def execute_transaction(commands):
+    conn = get_db_connection()
+    is_postgres = isinstance(conn, psycopg2.extensions.connection)
+    cursor = conn.cursor()
+    try:
+        for sql, params in commands:
+            cursor.execute(sql, params or [])
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        if is_postgres:
+            conn.close()
+
+
 def get_staf(request):
-    """Return Staf object for the logged-in user, or None."""
     email = request.session.get('email')
     role = request.session.get('role')
-    
+
     if not email or role != 'staff':
         return None
 
@@ -122,11 +118,10 @@ def get_staf(request):
         WHERE s.email = %s
     """
     rows = execute_raw_sql(sql, [email])
-    return DBRow(rows[0]) if rows else None
+    return rows[0] if rows else None
 
 
 def login_required_staff(view_func):
-    """Decorator: redirect to login if not Staff."""
     def wrapper(request, *args, **kwargs):
         if not get_staf(request):
             messages.error(request, 'Silakan login sebagai Staff terlebih dahulu.')
@@ -135,31 +130,116 @@ def login_required_staff(view_func):
     return wrapper
 
 
-# ===== REWARDS MANAGEMENT (Hadiah) =====
+def format_date_value(value):
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()[:10]
+    return str(value or '')[:10]
+
+
+def provider_name(row):
+    return row.get('nama_mitra') or row.get('nama_maskapai') or f"Penyedia {row.get('id_penyedia')}"
+
+
+def get_provider_options():
+    sql = """
+        SELECT p.id AS id_penyedia, mt.nama_mitra, mk.nama_maskapai
+        FROM penyedia p
+        LEFT JOIN mitra mt ON mt.id_penyedia = p.id
+        LEFT JOIN maskapai mk ON mk.id_penyedia = p.id
+        ORDER BY p.id
+    """
+    providers = execute_raw_sql(sql)
+    for provider in providers:
+        provider['id'] = provider['id_penyedia']
+        provider['nama_penyedia'] = provider_name(provider)
+    return providers
+
+
+def get_hadiah(kode_hadiah):
+    rows = execute_raw_sql(
+        """
+        SELECT h.kode_hadiah, h.nama AS nama_hadiah, h.nama,
+               h.miles AS harga_miles, h.miles, h.deskripsi,
+               h.valid_start_date, h.program_end, h.id_penyedia,
+               (h.valid_start_date <= CURRENT_DATE AND h.program_end >= CURRENT_DATE) AS is_active,
+               mt.nama_mitra, mk.nama_maskapai
+        FROM hadiah h
+        LEFT JOIN mitra mt ON mt.id_penyedia = h.id_penyedia
+        LEFT JOIN maskapai mk ON mk.id_penyedia = h.id_penyedia
+        WHERE h.kode_hadiah = %s
+        """,
+        [kode_hadiah],
+    )
+    if not rows:
+        return None
+
+    hadiah = rows[0]
+    hadiah['penyedia_nama'] = provider_name(hadiah)
+    hadiah['valid_start_date_value'] = format_date_value(hadiah.get('valid_start_date'))
+    hadiah['program_end_value'] = format_date_value(hadiah.get('program_end'))
+    return hadiah
+
+
+def get_mitra(email_mitra):
+    rows = execute_raw_sql(
+        """
+        SELECT email_mitra, id_penyedia, id_penyedia AS id_penyedia_id,
+               nama_mitra, tanggal_kerja_sama
+        FROM mitra
+        WHERE email_mitra = %s
+        """,
+        [email_mitra],
+    )
+    if not rows:
+        return None
+
+    mitra = rows[0]
+    mitra['tanggal_kerja_sama_value'] = format_date_value(mitra.get('tanggal_kerja_sama'))
+    return mitra
+
 
 @login_required_staff
 def daftar_hadiah(request):
-    """R — Display list of all rewards."""
     staf = get_staf(request)
-    
+    penyedia_filter = request.GET.get('penyedia', '')
+    status_filter = request.GET.get('status', '')
+
     sql = """
-        SELECT 
-            kode_hadiah,
-            nama_hadiah,
-            harga_miles,
-            deskripsi,
-            tanggal_mulai,
-            tanggal_berakhir,
-            id_penyedia
-        FROM hadiah
-        ORDER BY tanggal_mulai DESC
+        SELECT h.kode_hadiah, h.nama AS nama_hadiah, h.nama,
+               h.miles AS harga_miles, h.miles, h.deskripsi,
+               h.valid_start_date, h.program_end, h.id_penyedia,
+               (h.valid_start_date <= CURRENT_DATE AND h.program_end >= CURRENT_DATE) AS is_active,
+               mt.nama_mitra, mk.nama_maskapai
+        FROM hadiah h
+        LEFT JOIN mitra mt ON mt.id_penyedia = h.id_penyedia
+        LEFT JOIN maskapai mk ON mk.id_penyedia = h.id_penyedia
+        WHERE 1 = 1
     """
-    
-    rewards = execute_raw_sql(sql)
-    
+    params = []
+
+    if penyedia_filter:
+        sql += " AND h.id_penyedia = %s"
+        params.append(penyedia_filter)
+
+    if status_filter == 'aktif':
+        sql += " AND h.valid_start_date <= CURRENT_DATE AND h.program_end >= CURRENT_DATE"
+    elif status_filter == 'tidak_aktif':
+        sql += " AND NOT (h.valid_start_date <= CURRENT_DATE AND h.program_end >= CURRENT_DATE)"
+
+    sql += " ORDER BY h.valid_start_date DESC"
+
+    hadiah_list = execute_raw_sql(sql, params)
+    for hadiah in hadiah_list:
+        hadiah['penyedia_nama'] = provider_name(hadiah)
+        hadiah['is_active'] = bool(hadiah.get('is_active'))
+
     context = {
         'staf': staf,
-        'rewards': rewards,
+        'hadiah_list': hadiah_list,
+        'rewards': hadiah_list,
+        'penyedia_list': get_provider_options(),
+        'penyedia_filter': penyedia_filter,
+        'status_filter': status_filter,
         'navbar_type': 'staff',
     }
     return render(request, 'hadiah/daftar_hadiah.html', context)
@@ -168,606 +248,268 @@ def daftar_hadiah(request):
 @login_required_staff
 @require_http_methods(["GET", "POST"])
 def tambah_hadiah(request):
-    """C — Create new reward."""
     staf = get_staf(request)
-    
+
     if request.method == 'POST':
         nama_hadiah = request.POST.get('nama_hadiah', '').strip()
         harga_miles = request.POST.get('harga_miles', '').strip()
         deskripsi = request.POST.get('deskripsi', '').strip()
         id_penyedia = request.POST.get('id_penyedia', '').strip()
-        tanggal_mulai = request.POST.get('tanggal_mulai', '').strip()
-        tanggal_berakhir = request.POST.get('tanggal_berakhir', '').strip()
-        
-        if not all([nama_hadiah, harga_miles, deskripsi, id_penyedia, tanggal_mulai, tanggal_berakhir]):
+        valid_start_date = (
+            request.POST.get('valid_start_date', '').strip()
+            or request.POST.get('tanggal_mulai', '').strip()
+        )
+        program_end = (
+            request.POST.get('program_end', '').strip()
+            or request.POST.get('tanggal_berakhir', '').strip()
+        )
+
+        if not all([nama_hadiah, harga_miles, deskripsi, id_penyedia, valid_start_date, program_end]):
             messages.error(request, 'Semua field wajib diisi.')
-            return render(request, 'hadiah/tambah_hadiah.html', {'navbar_type': 'staff', 'staf': staf})
-        
-        try:
-            harga_miles = int(harga_miles)
-            if harga_miles <= 0:
-                raise ValueError
-        except ValueError:
-            messages.error(request, 'Harga miles harus berupa angka positif.')
-            return render(request, 'hadiah/tambah_hadiah.html', {'navbar_type': 'staff', 'staf': staf})
-        
-        try:
-            kode_hadiah = f"RWD-{int(timezone.now().timestamp()) % 10000:04d}"
-            
-            sql = """
-                INSERT INTO hadiah
-                (kode_hadiah, nama_hadiah, harga_miles, deskripsi, id_penyedia, tanggal_mulai, tanggal_berakhir)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """
-            
-            execute_raw_sql_update(sql, [
-                kode_hadiah, nama_hadiah, harga_miles, deskripsi, 
-                id_penyedia, tanggal_mulai, tanggal_berakhir
-            ])
-            
-            messages.success(request, f'Hadiah {nama_hadiah} berhasil ditambahkan dengan kode {kode_hadiah}.')
-            return redirect('red:daftar_hadiah')
-            
-        except Exception as e:
-            messages.error(request, f'Terjadi kesalahan: {str(e)}')
-            return render(request, 'hadiah/tambah_hadiah.html', {'navbar_type': 'staff', 'staf': staf})
-    
-    sql_providers = "SELECT id_penyedia, nama_penyedia FROM penyedia ORDER BY nama_penyedia"
-    providers = execute_raw_sql(sql_providers)
-    
-    context = {
+        else:
+            try:
+                harga_miles_int = int(harga_miles)
+                if harga_miles_int <= 0:
+                    raise ValueError
+
+                kode_hadiah = f"RWD-{int(timezone.now().timestamp()) % 1000000:06d}"
+                execute_raw_sql_update(
+                    """
+                    INSERT INTO hadiah
+                        (kode_hadiah, nama, miles, deskripsi, valid_start_date, program_end, id_penyedia)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    [kode_hadiah, nama_hadiah, harga_miles_int, deskripsi, valid_start_date, program_end, id_penyedia],
+                )
+                messages.success(request, f'Hadiah {nama_hadiah} berhasil ditambahkan dengan kode {kode_hadiah}.')
+                return redirect('red:daftar_hadiah')
+            except ValueError:
+                messages.error(request, 'Harga miles harus berupa angka positif.')
+            except Exception as e:
+                messages.error(request, f'Terjadi kesalahan: {str(e)}')
+
+    return render(request, 'hadiah/tambah_hadiah.html', {
         'staf': staf,
-        'providers': providers,
+        'providers': get_provider_options(),
+        'penyedia_list': get_provider_options(),
         'navbar_type': 'staff',
-    }
-    return render(request, 'hadiah/tambah_hadiah.html', context)
+    })
 
 
 @login_required_staff
 @require_http_methods(["GET", "POST"])
-def edit_hadiah(request):
-    """U — Update existing reward."""
+def edit_hadiah(request, kode_hadiah):
     staf = get_staf(request)
-    kode_hadiah = request.GET.get('kode') or request.POST.get('kode_hadiah')
-    
-    sql = "SELECT * FROM hadiah WHERE kode_hadiah = %s"
-    rewards = execute_raw_sql(sql, [kode_hadiah])
-    
-    if not rewards:
+    hadiah = get_hadiah(kode_hadiah)
+
+    if not hadiah:
         messages.error(request, 'Hadiah tidak ditemukan.')
         return redirect('red:daftar_hadiah')
-    
-    hadiah = rewards[0]
-    
+
     if request.method == 'POST':
         nama_hadiah = request.POST.get('nama_hadiah', '').strip()
         harga_miles = request.POST.get('harga_miles', '').strip()
         deskripsi = request.POST.get('deskripsi', '').strip()
         id_penyedia = request.POST.get('id_penyedia', '').strip()
-        tanggal_berakhir = request.POST.get('tanggal_berakhir', '').strip()
-        
-        if not all([nama_hadiah, harga_miles, deskripsi, id_penyedia, tanggal_berakhir]):
+        valid_start_date = request.POST.get('valid_start_date', '').strip()
+        program_end = request.POST.get('program_end', '').strip()
+
+        if not all([nama_hadiah, harga_miles, deskripsi, id_penyedia, valid_start_date, program_end]):
             messages.error(request, 'Semua field wajib diisi.')
-            context = {'staf': staf, 'hadiah': hadiah, 'navbar_type': 'staff'}
-            return render(request, 'hadiah/edit_hadiah.html', context)
-        
-        try:
-            harga_miles = int(harga_miles)
-            if harga_miles <= 0:
-                raise ValueError
-        except ValueError:
-            messages.error(request, 'Harga miles harus berupa angka positif.')
-            context = {'staf': staf, 'hadiah': hadiah, 'navbar_type': 'staff'}
-            return render(request, 'hadiah/edit_hadiah.html', context)
-        
-        try:
-            sql = """
-                UPDATE hadiah
-                SET nama_hadiah = %s, harga_miles = %s, deskripsi = %s, 
-                    id_penyedia = %s, tanggal_berakhir = %s
-                WHERE kode_hadiah = %s
-            """
-            
-            execute_raw_sql_update(sql, [
-                nama_hadiah, harga_miles, deskripsi, id_penyedia, tanggal_berakhir, kode_hadiah
-            ])
-            
-            messages.success(request, f'Hadiah {nama_hadiah} berhasil diperbarui.')
-            return redirect('red:daftar_hadiah')
-            
-        except Exception as e:
-            messages.error(request, f'Terjadi kesalahan: {str(e)}')
-    
-    sql_providers = "SELECT id_penyedia, nama_penyedia FROM penyedia ORDER BY nama_penyedia"
-    providers = execute_raw_sql(sql_providers)
-    
-    context = {
+        else:
+            try:
+                harga_miles_int = int(harga_miles)
+                if harga_miles_int <= 0:
+                    raise ValueError
+
+                execute_raw_sql_update(
+                    """
+                    UPDATE hadiah
+                    SET nama = %s, miles = %s, deskripsi = %s,
+                        valid_start_date = %s, program_end = %s, id_penyedia = %s
+                    WHERE kode_hadiah = %s
+                    """,
+                    [nama_hadiah, harga_miles_int, deskripsi, valid_start_date, program_end, id_penyedia, kode_hadiah],
+                )
+                messages.success(request, f'Hadiah {nama_hadiah} berhasil diperbarui.')
+                return redirect('red:daftar_hadiah')
+            except ValueError:
+                messages.error(request, 'Harga miles harus berupa angka positif.')
+            except Exception as e:
+                messages.error(request, f'Terjadi kesalahan: {str(e)}')
+
+    return render(request, 'hadiah/edit_hadiah.html', {
         'staf': staf,
         'hadiah': hadiah,
-        'providers': providers,
+        'providers': get_provider_options(),
+        'penyedia_list': get_provider_options(),
         'navbar_type': 'staff',
-    }
-    return render(request, 'hadiah/edit_hadiah.html', context)
+    })
 
 
 @login_required_staff
-@require_http_methods(["POST"])
-def hapus_hadiah(request):
-    """D — Delete reward."""
-    staf = get_staf(request)
-    kode_hadiah = request.POST.get('kode_hadiah', '').strip()
-    
-    if not kode_hadiah:
-        messages.error(request, 'Kode hadiah tidak valid.')
+@require_http_methods(["GET", "POST"])
+def hapus_hadiah(request, kode_hadiah):
+    hadiah = get_hadiah(kode_hadiah)
+
+    if not hadiah:
+        messages.error(request, 'Hadiah tidak ditemukan.')
         return redirect('red:daftar_hadiah')
-    
-    try:
-        sql = "DELETE FROM hadiah WHERE kode_hadiah = %s"
-        execute_raw_sql_update(sql, [kode_hadiah])
-        messages.success(request, 'Hadiah berhasil dihapus.')
-    except Exception as e:
-        messages.error(request, f'Terjadi kesalahan: {str(e)}')
-    
-    return redirect('red:daftar_hadiah')
 
+    if request.method == 'POST':
+        try:
+            execute_raw_sql_update("DELETE FROM hadiah WHERE kode_hadiah = %s", [kode_hadiah])
+            messages.success(request, 'Hadiah berhasil dihapus.')
+            return redirect('red:daftar_hadiah')
+        except Exception as e:
+            messages.error(request, f'Terjadi kesalahan: {str(e)}')
 
-# ===== PARTNER MANAGEMENT (Mitra) =====
+    return render(request, 'hadiah/hapus_hadiah.html', {
+        'hadiah': hadiah,
+        'navbar_type': 'staff',
+    })
+
 
 @login_required_staff
 def daftar_mitra(request):
-    """R — Display list of all partners."""
     staf = get_staf(request)
-    
-    sql = """
-        SELECT 
-            id_penyedia,
-            nama_penyedia,
-            email_penyedia,
-            tanggal_kerja_sama
-        FROM penyedia
+    mitra_list = execute_raw_sql(
+        """
+        SELECT email_mitra, id_penyedia, id_penyedia AS id_penyedia_id,
+               nama_mitra, tanggal_kerja_sama
+        FROM mitra
         ORDER BY tanggal_kerja_sama DESC
-    """
-    
-    mitras = execute_raw_sql(sql)
-    
+        """
+    )
+
     context = {
         'staf': staf,
-        'mitras': mitras,
+        'mitra_list': mitra_list,
+        'mitras': mitra_list,
         'navbar_type': 'staff',
     }
     return render(request, 'mitra/daftar_mitra.html', context)
 
 
-@login_required_staff
-@require_http_methods(["GET", "POST"])
-def tambah_mitra(request):
-    """C — Create new partner."""
-    staf = get_staf(request)
-    
-    if request.method == 'POST':
-        nama_penyedia = request.POST.get('nama_penyedia', '').strip()
-        email_penyedia = request.POST.get('email_penyedia', '').strip()
-        tanggal_kerja_sama = request.POST.get('tanggal_kerja_sama', '').strip()
-        
-        if not all([nama_penyedia, email_penyedia, tanggal_kerja_sama]):
-            messages.error(request, 'Semua field wajib diisi.')
-            return render(request, 'mitra/tambah_mitra.html', {'navbar_type': 'staff', 'staf': staf})
-        
-        if '@' not in email_penyedia:
-            messages.error(request, 'Format email tidak valid.')
-            return render(request, 'mitra/tambah_mitra.html', {'navbar_type': 'staff', 'staf': staf})
-        
-        try:
-            sql = """
-                INSERT INTO penyedia
-                (nama_penyedia, email_penyedia, tanggal_kerja_sama)
-                VALUES (%s, %s, %s)
-            """
-            
-            execute_raw_sql_update(sql, [nama_penyedia, email_penyedia, tanggal_kerja_sama])
-            
-            messages.success(request, f'Mitra {nama_penyedia} berhasil ditambahkan.')
-            return redirect('red:daftar_mitra')
-            
-        except Exception as e:
-            messages.error(request, f'Terjadi kesalahan: {str(e)}')
-            return render(request, 'mitra/tambah_mitra.html', {'navbar_type': 'staff', 'staf': staf})
-    
-    context = {
-        'staf': staf,
-        'navbar_type': 'staff',
-    }
-    return render(request, 'mitra/tambah_mitra.html', context)
-
-
-@login_required_staff
-@require_http_methods(["GET", "POST"])
-def edit_mitra(request):
-    """U — Update existing partner."""
-    staf = get_staf(request)
-    id_penyedia = request.GET.get('id') or request.POST.get('id_penyedia')
-    
-    sql = "SELECT * FROM penyedia WHERE id_penyedia = %s"
-    mitras = execute_raw_sql(sql, [id_penyedia])
-    
-    if not mitras:
-        messages.error(request, 'Mitra tidak ditemukan.')
-        return redirect('red:daftar_mitra')
-    
-    mitra = mitras[0]
-    
-    if request.method == 'POST':
-        nama_penyedia = request.POST.get('nama_penyedia', '').strip()
-        tanggal_kerja_sama = request.POST.get('tanggal_kerja_sama', '').strip()
-        
-        if not all([nama_penyedia, tanggal_kerja_sama]):
-            messages.error(request, 'Semua field wajib diisi.')
-            context = {'staf': staf, 'mitra': mitra, 'navbar_type': 'staff'}
-            return render(request, 'mitra/edit_mitra.html', context)
-        
-        try:
-            sql = """
-                UPDATE penyedia
-                SET nama_penyedia = %s, tanggal_kerja_sama = %s
-                WHERE id_penyedia = %s
-            """
-            
-            execute_raw_sql_update(sql, [nama_penyedia, tanggal_kerja_sama, id_penyedia])
-            
-            messages.success(request, f'Mitra {nama_penyedia} berhasil diperbarui.')
-            return redirect('red:daftar_mitra')
-            
-        except Exception as e:
-            messages.error(request, f'Terjadi kesalahan: {str(e)}')
-    
-    context = {
-        'staf': staf,
-        'mitra': mitra,
-        'navbar_type': 'staff',
-    }
-    return render(request, 'mitra/edit_mitra.html', context)
-
-
-@login_required_staff
-@require_http_methods(["POST"])
-def hapus_mitra(request):
-    """D — Delete partner."""
-    staf = get_staf(request)
-    id_penyedia = request.POST.get('id_penyedia', '').strip()
-    
-    if not id_penyedia:
-        messages.error(request, 'ID Mitra tidak valid.')
-        return redirect('red:daftar_mitra')
-    
+def create_mitra(nama_mitra, email_mitra, tanggal_kerja_sama):
+    conn = get_db_connection()
+    is_postgres = isinstance(conn, psycopg2.extensions.connection)
+    cursor = conn.cursor()
     try:
-        sql = "DELETE FROM penyedia WHERE id_penyedia = %s"
-        execute_raw_sql_update(sql, [id_penyedia])
-        messages.success(request, 'Mitra berhasil dihapus.')
-    except Exception as e:
-        messages.error(request, f'Terjadi kesalahan: {str(e)}')
-    
-    return redirect('red:daftar_mitra')
+        if is_postgres:
+            cursor.execute("INSERT INTO penyedia DEFAULT VALUES RETURNING id")
+            id_penyedia = cursor.fetchone()[0]
+        else:
+            cursor.execute("INSERT INTO penyedia DEFAULT VALUES")
+            id_penyedia = cursor.lastrowid
 
-
-# ===== REWARDS MANAGEMENT (Hadiah) =====
-
-@login_required_staff
-def daftar_hadiah(request):
-    """R — Display list of all rewards."""
-    staf = get_staf(request)
-    
-    # Fetch rewards using raw SQL
-    sql = """
-        SELECT 
-            kode_hadiah,
-            nama_hadiah,
-            harga_miles,
-            deskripsi,
-            tanggal_mulai,
-            tanggal_berakhir,
-            id_penyedia
-        FROM hadiah
-        ORDER BY tanggal_mulai DESC
-    """
-    
-    rewards = execute_raw_sql(sql)
-    
-    context = {
-        'staf': staf,
-        'rewards': rewards,
-        'navbar_type': 'staff',
-    }
-    return render(request, 'hadiah/daftar_hadiah.html', context)
-
-
-@login_required_staff
-@require_http_methods(["GET", "POST"])
-def tambah_hadiah(request):
-    """C — Create new reward."""
-    staf = get_staf(request)
-    
-    if request.method == 'POST':
-        nama_hadiah = request.POST.get('nama_hadiah', '').strip()
-        harga_miles = request.POST.get('harga_miles', '').strip()
-        deskripsi = request.POST.get('deskripsi', '').strip()
-        id_penyedia = request.POST.get('id_penyedia', '').strip()
-        tanggal_mulai = request.POST.get('tanggal_mulai', '').strip()
-        tanggal_berakhir = request.POST.get('tanggal_berakhir', '').strip()
-        
-        # Validation
-        if not all([nama_hadiah, harga_miles, deskripsi, id_penyedia, tanggal_mulai, tanggal_berakhir]):
-            messages.error(request, 'Semua field wajib diisi.')
-            return render(request, 'hadiah/tambah_hadiah.html', {'navbar_type': 'staff', 'staf': staf})
-        
-        try:
-            harga_miles = int(harga_miles)
-            if harga_miles <= 0:
-                raise ValueError
-        except ValueError:
-            messages.error(request, 'Harga miles harus berupa angka positif.')
-            return render(request, 'hadiah/tambah_hadiah.html', {'navbar_type': 'staff', 'staf': staf})
-        
-        try:
-            # Generate reward code
-            kode_hadiah = f"RWD-{int(timezone.now().timestamp()) % 10000:04d}"
-            
-            sql = """
-                INSERT INTO hadiah
-                (kode_hadiah, nama_hadiah, harga_miles, deskripsi, id_penyedia, tanggal_mulai, tanggal_berakhir)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+        cursor.execute(
             """
-            
-            execute_raw_sql_update(sql, [
-                kode_hadiah, nama_hadiah, harga_miles, deskripsi, 
-                id_penyedia, tanggal_mulai, tanggal_berakhir
-            ])
-            
-            messages.success(request, f'Hadiah {nama_hadiah} berhasil ditambahkan dengan kode {kode_hadiah}.')
-            return redirect('red:daftar_hadiah')
-            
-        except Exception as e:
-            messages.error(request, f'Terjadi kesalahan: {str(e)}')
-            return render(request, 'hadiah/tambah_hadiah.html', {'navbar_type': 'staff', 'staf': staf})
-    
-    # Fetch providers
-    sql_providers = "SELECT id_penyedia, nama_penyedia FROM penyedia ORDER BY nama_penyedia"
-    providers = execute_raw_sql(sql_providers)
-    
-    context = {
-        'staf': staf,
-        'providers': providers,
-        'navbar_type': 'staff',
-    }
-    return render(request, 'hadiah/tambah_hadiah.html', context)
-
-
-@login_required_staff
-@require_http_methods(["GET", "POST"])
-def edit_hadiah(request):
-    """U — Update existing reward."""
-    staf = get_staf(request)
-    kode_hadiah = request.GET.get('kode') or request.POST.get('kode_hadiah')
-    
-    # Fetch reward details
-    sql = "SELECT * FROM hadiah WHERE kode_hadiah = %s"
-    rewards = execute_raw_sql(sql, [kode_hadiah])
-    
-    if not rewards:
-        messages.error(request, 'Hadiah tidak ditemukan.')
-        return redirect('red:daftar_hadiah')
-    
-    hadiah = rewards[0]
-    
-    if request.method == 'POST':
-        nama_hadiah = request.POST.get('nama_hadiah', '').strip()
-        harga_miles = request.POST.get('harga_miles', '').strip()
-        deskripsi = request.POST.get('deskripsi', '').strip()
-        id_penyedia = request.POST.get('id_penyedia', '').strip()
-        tanggal_berakhir = request.POST.get('tanggal_berakhir', '').strip()
-        
-        if not all([nama_hadiah, harga_miles, deskripsi, id_penyedia, tanggal_berakhir]):
-            messages.error(request, 'Semua field wajib diisi.')
-            context = {'staf': staf, 'hadiah': hadiah, 'navbar_type': 'staff'}
-            return render(request, 'hadiah/edit_hadiah.html', context)
-        
-        try:
-            harga_miles = int(harga_miles)
-            if harga_miles <= 0:
-                raise ValueError
-        except ValueError:
-            messages.error(request, 'Harga miles harus berupa angka positif.')
-            context = {'staf': staf, 'hadiah': hadiah, 'navbar_type': 'staff'}
-            return render(request, 'hadiah/edit_hadiah.html', context)
-        
-        try:
-            sql = """
-                UPDATE hadiah
-                SET nama_hadiah = %s, harga_miles = %s, deskripsi = %s, 
-                    id_penyedia = %s, tanggal_berakhir = %s
-                WHERE kode_hadiah = %s
-            """
-            
-            execute_raw_sql_update(sql, [
-                nama_hadiah, harga_miles, deskripsi, id_penyedia, tanggal_berakhir, kode_hadiah
-            ])
-            
-            messages.success(request, f'Hadiah {nama_hadiah} berhasil diperbarui.')
-            return redirect('red:daftar_hadiah')
-            
-        except Exception as e:
-            messages.error(request, f'Terjadi kesalahan: {str(e)}')
-    
-    # Fetch providers
-    sql_providers = "SELECT id_penyedia, nama_penyedia FROM penyedia ORDER BY nama_penyedia"
-    providers = execute_raw_sql(sql_providers)
-    
-    context = {
-        'staf': staf,
-        'hadiah': hadiah,
-        'providers': providers,
-        'navbar_type': 'staff',
-    }
-    return render(request, 'hadiah/edit_hadiah.html', context)
-
-
-@login_required_staff
-@require_http_methods(["POST"])
-def hapus_hadiah(request):
-    """D — Delete reward."""
-    staf = get_staf(request)
-    kode_hadiah = request.POST.get('kode_hadiah', '').strip()
-    
-    if not kode_hadiah:
-        messages.error(request, 'Kode hadiah tidak valid.')
-        return redirect('red:daftar_hadiah')
-    
-    try:
-        sql = "DELETE FROM hadiah WHERE kode_hadiah = %s"
-        execute_raw_sql_update(sql, [kode_hadiah])
-        messages.success(request, 'Hadiah berhasil dihapus.')
-    except Exception as e:
-        messages.error(request, f'Terjadi kesalahan: {str(e)}')
-    
-    return redirect('red:daftar_hadiah')
-
-
-# ===== PARTNER MANAGEMENT (Mitra) =====
-
-@login_required_staff
-def daftar_mitra(request):
-    """R — Display list of all partners."""
-    staf = get_staf(request)
-    
-    # Fetch partners using raw SQL
-    sql = """
-        SELECT 
-            id_penyedia,
-            nama_penyedia,
-            email_penyedia,
-            tanggal_kerja_sama
-        FROM penyedia
-        ORDER BY tanggal_kerja_sama DESC
-    """
-    
-    mitras = execute_raw_sql(sql)
-    
-    context = {
-        'staf': staf,
-        'mitras': mitras,
-        'navbar_type': 'staff',
-    }
-    return render(request, 'mitra/daftar_mitra.html', context)
+            INSERT INTO mitra (email_mitra, id_penyedia, nama_mitra, tanggal_kerja_sama)
+            VALUES (%s, %s, %s, %s)
+            """,
+            [email_mitra, id_penyedia, nama_mitra, tanggal_kerja_sama],
+        )
+        conn.commit()
+        return id_penyedia
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        if is_postgres:
+            conn.close()
 
 
 @login_required_staff
 @require_http_methods(["GET", "POST"])
 def tambah_mitra(request):
-    """C — Create new partner."""
     staf = get_staf(request)
-    
+
     if request.method == 'POST':
-        nama_penyedia = request.POST.get('nama_penyedia', '').strip()
-        email_penyedia = request.POST.get('email_penyedia', '').strip()
+        nama_mitra = request.POST.get('nama_mitra', '').strip()
+        email_mitra = request.POST.get('email_mitra', '').strip()
         tanggal_kerja_sama = request.POST.get('tanggal_kerja_sama', '').strip()
-        
-        # Validation
-        if not all([nama_penyedia, email_penyedia, tanggal_kerja_sama]):
+
+        if not all([nama_mitra, email_mitra, tanggal_kerja_sama]):
             messages.error(request, 'Semua field wajib diisi.')
-            return render(request, 'mitra/tambah_mitra.html', {'navbar_type': 'staff', 'staf': staf})
-        
-        # Validate email format
-        if '@' not in email_penyedia:
+        elif '@' not in email_mitra:
             messages.error(request, 'Format email tidak valid.')
-            return render(request, 'mitra/tambah_mitra.html', {'navbar_type': 'staff', 'staf': staf})
-        
-        try:
-            sql = """
-                INSERT INTO penyedia
-                (nama_penyedia, email_penyedia, tanggal_kerja_sama)
-                VALUES (%s, %s, %s)
-            """
-            
-            execute_raw_sql_update(sql, [nama_penyedia, email_penyedia, tanggal_kerja_sama])
-            
-            messages.success(request, f'Mitra {nama_penyedia} berhasil ditambahkan.')
-            return redirect('red:daftar_mitra')
-            
-        except Exception as e:
-            messages.error(request, f'Terjadi kesalahan: {str(e)}')
-            return render(request, 'mitra/tambah_mitra.html', {'navbar_type': 'staff', 'staf': staf})
-    
-    context = {
+        else:
+            try:
+                create_mitra(nama_mitra, email_mitra, tanggal_kerja_sama)
+                messages.success(request, f'Mitra {nama_mitra} berhasil ditambahkan.')
+                return redirect('red:daftar_mitra')
+            except Exception as e:
+                messages.error(request, f'Terjadi kesalahan: {str(e)}')
+
+    return render(request, 'mitra/tambah_mitra.html', {
         'staf': staf,
         'navbar_type': 'staff',
-    }
-    return render(request, 'mitra/tambah_mitra.html', context)
+    })
 
 
 @login_required_staff
 @require_http_methods(["GET", "POST"])
-def edit_mitra(request):
-    """U — Update existing partner."""
+def edit_mitra(request, email_mitra):
     staf = get_staf(request)
-    id_penyedia = request.GET.get('id') or request.POST.get('id_penyedia')
-    
-    # Fetch partner details
-    sql = "SELECT * FROM penyedia WHERE id_penyedia = %s"
-    mitras = execute_raw_sql(sql, [id_penyedia])
-    
-    if not mitras:
+    mitra = get_mitra(email_mitra)
+
+    if not mitra:
         messages.error(request, 'Mitra tidak ditemukan.')
         return redirect('red:daftar_mitra')
-    
-    mitra = mitras[0]
-    
+
     if request.method == 'POST':
-        nama_penyedia = request.POST.get('nama_penyedia', '').strip()
+        nama_mitra = request.POST.get('nama_mitra', '').strip()
         tanggal_kerja_sama = request.POST.get('tanggal_kerja_sama', '').strip()
-        
-        if not all([nama_penyedia, tanggal_kerja_sama]):
+
+        if not all([nama_mitra, tanggal_kerja_sama]):
             messages.error(request, 'Semua field wajib diisi.')
-            context = {'staf': staf, 'mitra': mitra, 'navbar_type': 'staff'}
-            return render(request, 'mitra/edit_mitra.html', context)
-        
-        try:
-            sql = """
-                UPDATE penyedia
-                SET nama_penyedia = %s, tanggal_kerja_sama = %s
-                WHERE id_penyedia = %s
-            """
-            
-            execute_raw_sql_update(sql, [nama_penyedia, tanggal_kerja_sama, id_penyedia])
-            
-            messages.success(request, f'Mitra {nama_penyedia} berhasil diperbarui.')
-            return redirect('red:daftar_mitra')
-            
-        except Exception as e:
-            messages.error(request, f'Terjadi kesalahan: {str(e)}')
-    
-    context = {
+        else:
+            try:
+                execute_raw_sql_update(
+                    """
+                    UPDATE mitra
+                    SET nama_mitra = %s, tanggal_kerja_sama = %s
+                    WHERE email_mitra = %s
+                    """,
+                    [nama_mitra, tanggal_kerja_sama, email_mitra],
+                )
+                messages.success(request, f'Mitra {nama_mitra} berhasil diperbarui.')
+                return redirect('red:daftar_mitra')
+            except Exception as e:
+                messages.error(request, f'Terjadi kesalahan: {str(e)}')
+
+    return render(request, 'mitra/edit_mitra.html', {
         'staf': staf,
         'mitra': mitra,
         'navbar_type': 'staff',
-    }
-    return render(request, 'mitra/edit_mitra.html', context)
+    })
 
 
 @login_required_staff
-@require_http_methods(["POST"])
-def hapus_mitra(request):
-    """D — Delete partner."""
-    staf = get_staf(request)
-    id_penyedia = request.POST.get('id_penyedia', '').strip()
-    
-    if not id_penyedia:
-        messages.error(request, 'ID Mitra tidak valid.')
+@require_http_methods(["GET", "POST"])
+def hapus_mitra(request, email_mitra):
+    mitra = get_mitra(email_mitra)
+
+    if not mitra:
+        messages.error(request, 'Mitra tidak ditemukan.')
         return redirect('red:daftar_mitra')
-    
-    try:
-        sql = "DELETE FROM penyedia WHERE id_penyedia = %s"
-        execute_raw_sql_update(sql, [id_penyedia])
-        messages.success(request, 'Mitra berhasil dihapus.')
-    except Exception as e:
-        messages.error(request, f'Terjadi kesalahan: {str(e)}')
-    
-    return redirect('red:daftar_mitra')
+
+    if request.method == 'POST':
+        try:
+            id_penyedia = mitra.id_penyedia
+            execute_transaction([
+                ("DELETE FROM hadiah WHERE id_penyedia = %s", [id_penyedia]),
+                ("DELETE FROM mitra WHERE email_mitra = %s", [email_mitra]),
+                ("DELETE FROM penyedia WHERE id = %s", [id_penyedia]),
+            ])
+            messages.success(request, 'Mitra berhasil dihapus.')
+            return redirect('red:daftar_mitra')
+        except Exception as e:
+            messages.error(request, f'Terjadi kesalahan: {str(e)}')
+
+    return render(request, 'mitra/hapus_mitra.html', {
+        'mitra': mitra,
+        'navbar_type': 'staff',
+    })

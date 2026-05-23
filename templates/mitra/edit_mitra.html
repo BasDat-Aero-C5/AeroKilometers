@@ -7,12 +7,8 @@
         
         <form method="POST">
             {% csrf_token %}
-            {% if form.non_field_errors %}
-                <div class="mb-4 text-sm text-red-600">{{ form.non_field_errors }}</div>
-            {% endif %}
-            
+
             <div class="grid grid-cols-1 gap-6">
-                <!-- ID Penyedia & Email Mitra (Read-Only) -->
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">ID Penyedia</label>
@@ -25,18 +21,14 @@
                 </div>
                 <p class="text-xs text-gray-500 mt-[-1rem]">ID Penyedia dan Email Mitra (sebagai *primary key*) tidak dapat diubah.</p>
 
-                <!-- Nama Mitra -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Nama Mitra</label>
-                    {{ form.nama_mitra }}
-                    {{ form.nama_mitra.errors }}
+                    <input type="text" name="nama_mitra" value="{{ mitra.nama_mitra }}" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
                 </div>
 
-                <!-- Tanggal Kerja Sama -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Tanggal Kerja Sama</label>
-                    {{ form.tanggal_kerja_sama }}
-                    {{ form.tanggal_kerja_sama.errors }}
+                    <input type="date" name="tanggal_kerja_sama" value="{{ mitra.tanggal_kerja_sama_value }}" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
                 </div>
             </div>
 

@@ -7,57 +7,46 @@
         
         <form method="POST">
             {% csrf_token %}
-            {% if form.non_field_errors %}
-                <div class="mb-4 text-sm text-red-600">{{ form.non_field_errors }}</div>
-            {% endif %}
-            
+
             <div class="grid grid-cols-1 gap-6">
-                <!-- Kode Hadiah (Read-Only) -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Kode Hadiah</label>
                     <input type="text" value="{{ hadiah.kode_hadiah }}" readonly class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 text-gray-500 cursor-not-allowed sm:text-sm">
                     <p class="mt-1 text-xs text-gray-500">Kode hadiah tidak dapat diubah.</p>
                 </div>
 
-                <!-- Nama Hadiah -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Nama Hadiah</label>
-                    {{ form.nama_hadiah }}
-                    {{ form.nama_hadiah.errors }}
+                    <input type="text" name="nama_hadiah" value="{{ hadiah.nama_hadiah }}" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                 </div>
 
-                <!-- Penyedia -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Penyedia</label>
-                    {{ form.id_penyedia }}
-                    {{ form.id_penyedia.errors }}
+                    <select name="id_penyedia" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        {% for penyedia in penyedia_list %}
+                            <option value="{{ penyedia.id_penyedia }}" {% if penyedia.id_penyedia == hadiah.id_penyedia %}selected{% endif %}>{{ penyedia.nama_penyedia }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
 
-                <!-- Miles -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Harga (Miles)</label>
-                    {{ form.harga_miles }}
-                    {{ form.harga_miles.errors }}
+                    <input type="number" name="harga_miles" value="{{ hadiah.harga_miles }}" min="1" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                 </div>
 
-                <!-- Deskripsi -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Deskripsi</label>
-                    {{ form.deskripsi }}
-                    {{ form.deskripsi.errors }}
+                    <textarea name="deskripsi" rows="3" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">{{ hadiah.deskripsi }}</textarea>
                 </div>
 
-                <!-- Validitas (Start & End) -->
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Valid Start Date</label>
-                        {{ form.valid_start_date }}
-                        {{ form.valid_start_date.errors }}
+                        <input type="date" name="valid_start_date" value="{{ hadiah.valid_start_date_value }}" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Program End</label>
-                        {{ form.program_end }}
-                        {{ form.program_end.errors }}
+                        <input type="date" name="program_end" value="{{ hadiah.program_end_value }}" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                     </div>
                 </div>
             </div>

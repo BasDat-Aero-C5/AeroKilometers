@@ -8,30 +8,21 @@
         
         <form method="POST">
             {% csrf_token %}
-            {% if form.non_field_errors %}
-                <div class="mb-4 text-sm text-red-600">{{ form.non_field_errors }}</div>
-            {% endif %}
-            
+
             <div class="grid grid-cols-1 gap-6">
-                <!-- Nama Mitra -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Nama Mitra</label>
-                    {{ form.nama_mitra }}
-                    {{ form.nama_mitra.errors }}
+                    <input type="text" name="nama_mitra" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" placeholder="Masukkan nama perusahaan/organisasi mitra...">
                 </div>
 
-                <!-- Email Mitra -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Email Mitra</label>
-                    {{ form.email_mitra }}
-                    {{ form.email_mitra.errors }}
+                    <input type="email" name="email_mitra" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" placeholder="Contoh: partnership@mitra.com">
                 </div>
 
-                <!-- Tanggal Kerja Sama -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Tanggal Kerja Sama</label>
-                    {{ form.tanggal_kerja_sama }}
-                    {{ form.tanggal_kerja_sama.errors }}
+                    <input type="date" name="tanggal_kerja_sama" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
                 </div>
             </div>
 

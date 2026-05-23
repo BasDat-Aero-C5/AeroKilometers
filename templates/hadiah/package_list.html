@@ -27,8 +27,8 @@
           Rp {{ p.price|floatformat:0 }}
         </p>
 
-        <button
-          onclick="openModal('{{ p.miles }}', '{{ p.price }}')"
+        <button type="button"
+          onclick="openModal('{{ p.code }}', '{{ p.miles }}', '{{ p.price }}')"
           class="mt-4 w-full bg-primary hover:bg-blue-900 text-white py-2 rounded-lg">
           Beli
         </button>
@@ -64,17 +64,22 @@
         Batal
       </button>
 
-      <button class="px-4 py-2 bg-primary text-white rounded-lg text-sm">
-        Konfirmasi Pembelian
-      </button>
+      <form method="POST" action="{% url 'blue:buy_package' %}">
+        {% csrf_token %}
+        <input type="hidden" name="kode_package" id="modal-kode-package">
+        <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg text-sm">
+          Konfirmasi Pembelian
+        </button>
+      </form>
     </div>
 
   </div>
 </div>
 
 <script>
-function openModal(miles, price) {
+function openModal(code, miles, price) {
     document.getElementById("modal").classList.remove("hidden");
+    document.getElementById("modal-kode-package").value = code;
 
     document.getElementById("modal-miles").innerText = "+" + miles;
     document.getElementById("modal-price").innerText = "Rp " + Number(price).toLocaleString();

@@ -180,16 +180,16 @@ def page_view(request):
     
     sql = """
         SELECT 
-            nomor_dokumen,
-            jenis_dokumen,
-            negara,
+            nomor as nomor_dokumen,
+            jenis as jenis_dokumen,
+            negara_penerbit as negara,
             tanggal_terbit,
             tanggal_habis,
             CASE 
-                WHEN tanggal_habis >= CURDATE() THEN 'Aktif'
+                WHEN tanggal_habis >= CURRENT_DATE THEN 'Aktif'
                 ELSE 'Kedaluwarsa'
             END as status
-        FROM identitas_member
+        FROM identitas
         WHERE email_member = %s
         ORDER BY tanggal_terbit DESC
     """
@@ -225,8 +225,8 @@ def form_view_member(request):
         
         try:
             sql = """
-                INSERT INTO identitas_member
-                (email_member, nomor_dokumen, jenis_dokumen, negara, tanggal_terbit, tanggal_habis)
+                INSERT INTO identitas
+                (email_member, nomor, jenis, negara_penerbit, tanggal_terbit, tanggal_habis)
                 VALUES (%s, %s, %s, %s, %s, %s)
             """
             
@@ -257,7 +257,13 @@ def edit_view_member(request, id):
     """U — Update member identity."""
     member = get_member(request)
     
-    sql = "SELECT * FROM identitas_member WHERE nomor_dokumen = %s AND email_member = %s"
+    sql = """
+        SELECT nomor as nomor_dokumen, jenis as jenis_dokumen,
+               negara_penerbit as negara, tanggal_terbit, tanggal_habis,
+               email_member
+        FROM identitas
+        WHERE nomor = %s AND email_member = %s
+    """
     identities = execute_raw_sql(sql, [id, member.email_id])
     
     if not identities:
@@ -279,9 +285,9 @@ def edit_view_member(request, id):
         
         try:
             sql = """
-                UPDATE identitas_member
-                SET jenis_dokumen = %s, negara = %s, tanggal_terbit = %s, tanggal_habis = %s
-                WHERE nomor_dokumen = %s AND email_member = %s
+                UPDATE identitas
+                SET jenis = %s, negara_penerbit = %s, tanggal_terbit = %s, tanggal_habis = %s
+                WHERE nomor = %s AND email_member = %s
             """
             
             execute_raw_sql_update(sql, [
@@ -494,16 +500,16 @@ def page_view(request):
     # Fetch member identities using raw SQL
     sql = """
         SELECT 
-            nomor_dokumen,
-            jenis_dokumen,
-            negara,
+            nomor as nomor_dokumen,
+            jenis as jenis_dokumen,
+            negara_penerbit as negara,
             tanggal_terbit,
             tanggal_habis,
             CASE 
-                WHEN tanggal_habis >= CURDATE() THEN 'Aktif'
+                WHEN tanggal_habis >= CURRENT_DATE THEN 'Aktif'
                 ELSE 'Kedaluwarsa'
             END as status
-        FROM identitas_member
+        FROM identitas
         WHERE email_member = %s
         ORDER BY tanggal_terbit DESC
     """
@@ -540,8 +546,8 @@ def form_view_member(request):
         
         try:
             sql = """
-                INSERT INTO identitas_member
-                (email_member, nomor_dokumen, jenis_dokumen, negara, tanggal_terbit, tanggal_habis)
+                INSERT INTO identitas
+                (email_member, nomor, jenis, negara_penerbit, tanggal_terbit, tanggal_habis)
                 VALUES (%s, %s, %s, %s, %s, %s)
             """
             
@@ -573,7 +579,13 @@ def edit_view_member(request, id):
     member = get_member(request)
     
     # Fetch identity
-    sql = "SELECT * FROM identitas_member WHERE nomor_dokumen = %s AND email_member = %s"
+    sql = """
+        SELECT nomor as nomor_dokumen, jenis as jenis_dokumen,
+               negara_penerbit as negara, tanggal_terbit, tanggal_habis,
+               email_member
+        FROM identitas
+        WHERE nomor = %s AND email_member = %s
+    """
     identities = execute_raw_sql(sql, [id, member.email_id])
     
     if not identities:
@@ -595,9 +607,9 @@ def edit_view_member(request, id):
         
         try:
             sql = """
-                UPDATE identitas_member
-                SET jenis_dokumen = %s, negara = %s, tanggal_terbit = %s, tanggal_habis = %s
-                WHERE nomor_dokumen = %s AND email_member = %s
+                UPDATE identitas
+                SET jenis = %s, negara_penerbit = %s, tanggal_terbit = %s, tanggal_habis = %s
+                WHERE nomor = %s AND email_member = %s
             """
             
             execute_raw_sql_update(sql, [
